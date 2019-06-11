@@ -42,8 +42,87 @@ parameters:
                  This setup requires the Compute role to have the
                  PacemakerRemote service added to it.
     type: boolean
+  FastPathMask:
+    type: string
+    default: ""
+    tags:
+      - role_specific
+  FastPathNics:
+    type: string
+    default: ""
+    tags:
+      - role_specific
+  CorePortMapping:
+    type: string
+    default: ""
+    tags:
+      - role_specific
+  FastPathMemory:
+    type: string
+    default: ""
+    tags:
+      - role_specific
+  VmMemory:
+    type: string
+    default: ""
+    tags:
+      - role_specific
+  NbMbuf:
+    type: string
+    default: ""
+    tags:
+      - role_specific
+  FastPathOffload:
+    type: string
+    default: ""
+    tags:
+      - role_specific
+  FastPathNicDescriptors:
+    type: string
+    default: ""
+    tags:
+      - role_specific
+  FastPathOptions:
+    type: string
+    default: ""
+    tags:
+      - role_specific
+  FastPathDPVI:
+    type: string
+    default: ""
+    tags:
+      - role_specific
 
 resources:
+  RoleParametersValue:
+    type: OS::Heat::Value
+    properties:
+      type: json
+      value:
+        map_replace:
+          - map_replace:
+            - FP_MASK: FP_MASK
+              FP_PORTS: FP_PORTS
+              CORE_PORT_MAPPING: CORE_PORT_MAPPING
+              FP_MEMORY: FP_MEMORY
+              VM_MEMORY: VM_MEMORY
+              NB_MBUF: NB_MBUF
+              FP_OFFLOAD: FP_OFFLOAD
+              FPNSDK_OPTIONS: FPNSDK_OPTIONS
+              DPVI_MASK: DPVI_MASK
+              FP_OPTIONS: FP_OPTIONS
+            - values: {get_param: [RoleParameters]}
+          - values:
+              FP_MASK: {get_param: FastPathMask}
+              FP_PORTS: {get_param: FastPathNics}
+              CORE_PORT_MAPPING: {get_param: CorePortMapping}
+              FP_MEMORY: {get_param: FastPathMemory}
+              VM_MEMORY: {get_param: VmMemory}
+              NB_MBUF: {get_param: NbMbuf}
+              FP_OFFLOAD: {get_param: FastPathOffload}
+              FPNSDK_OPTIONS: {get_param: FastPathNicDescriptors}
+              DPVI_MASK: {get_param: FastPathDPVI}
+              FP_OPTIONS: {get_param: FastPathOptions}
 
   ContainersCommon:
     type: /usr/share/openstack-tripleo-heat-templates/docker/services/containers-common.yaml
@@ -121,9 +200,81 @@ outputs:
       docker_config:
         get_attr: [NovaComputeAvrsDockerBase, role_data, docker_config]
       host_prep_tasks:
-        get_attr: [NovaComputeAvrsDockerBase, role_data, host_prep_tasks]
+        list_concat:
+        - {get_attr: [NovaComputeAvrsDockerBase, role_data, host_prep_tasks]}
+        - - name: create repo
+            shell: createrepo /6wind/.
+          - name: Setup repo
+            yum_repository:
+              name: nuage_6wind
+              baseurl: file:///6wind
+              enabled: yes
+              gpgcheck: no
+              description: Nuage_6wind
+          - name: install base packages
+            yum:
+              name: "{{ packages }}"
+              state: present
+            vars:
+              packages:
+                - selinux-policy-nuage-avrs
+                - python-pyelftools
+                - dkms
+          - name: remove dpdk
+            yum:
+              name: dpdk
+              state: absent
+          - name: install 6wind packages
+            yum:
+              name: "6windgate*"
+              state: present
+          - name: remove nuage-openvswitch
+            yum:
+              name: nuage-openvswitch
+              state: absent
+          - name: install nuage packages
+            yum:
+              name: "{{ packages }}"
+              state: present
+            vars:
+              packages:
+                - nuage-openvswitch*
+                - nuage-metadata-agent*
+                - virtual-accelerator*
+          - name: cleanup repo
+            yum_repository:
+              name: nuage_6wind
+              state: absent
+          - name: remove repodata
+            shell: rm -rf /6wind/repodata
+          - name: adding sockfolder pmd-vhost param
+            shell: crudini --set /etc/fp-vdev.ini pmd-vhost sockfolder /var/lib/vhost_sockets
+          - name: Add params to fast-path.env file
+            shell: |-
+              #!/bin/bash
+              declare -A fast_path_params
+              fast_path_params=( ["FP_MASK"]="{{FP_MASK}}" ["FP_PORTS"]="{{FP_PORTS}}" ["CORE_PORT_MAPPING"]="{{CORE_PORT_MAPPING}}" ["FP_MEMORY"]="{{FP_MEMORY}}" ["VM_MEMORY"]="{{VM_MEMORY}}" ["NB_MBUF"]="{{NB_MBUF}}" ["FP_OFFLOAD"]="{{FP_OFFLOAD}}" ["FPNSDK_OPTIONS"]="{{FPNSDK_OPTIONS}}" ["DPVI_MASK"]="{{DPVI_MASK}}" ["FP_OPTIONS"]="{{FP_OPTIONS}}")
+              for param in "${!fast_path_params[@]}" ; do
+                  FP_VAR=${fast_path_params[$param]}
+                  if [[ ! -z $FP_VAR ]] ; then
+                      echo ": \${$param:=$FP_VAR}" >> /etc/fast-path.env
+                  fi
+              done
+            vars:
+              FP_MASK: {get_attr: [RoleParametersValue, value, FP_MASK]}
+              FP_PORTS: {get_attr: [RoleParametersValue, value, FP_PORTS]}
+              CORE_PORT_MAPPING: {get_attr: [RoleParametersValue, value, CORE_PORT_MAPPING]}
+              FP_MEMORY: {get_attr: [RoleParametersValue, value, FP_MEMORY]}
+              VM_MEMORY: {get_attr: [RoleParametersValue, value, VM_MEMORY]}
+              NB_MBUF: {get_attr: [RoleParametersValue, value, NB_MBUF]}
+              FP_OFFLOAD: {get_attr: [RoleParametersValue, value, FP_OFFLOAD]}
+              FPNSDK_OPTIONS: {get_attr: [RoleParametersValue, value, FPNSDK_OPTIONS]}
+              DPVI_MASK: {get_attr: [RoleParametersValue, value, DPVI_MASK]}
+              FP_OPTIONS: {get_attr: [RoleParametersValue, value, FP_OPTIONS]}
+          - name: Restart Virtual-accelerator on AVRS nodes
+            shell: nohup sh -c 'systemctl restart virtual-accelerator && systemctl restart network' > /dev/null &
+
       upgrade_tasks:
         get_attr: [NovaComputeAvrsDockerBase, role_data, upgrade_tasks]
       fast_forward_upgrade_tasks:
         get_attr: [NovaComputeAvrsDockerBase, role_data, fast_forward_upgrade_tasks]
-
