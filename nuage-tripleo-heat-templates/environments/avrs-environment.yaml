@@ -1,6 +1,4 @@
 resource_registry:
-  OS::TripleO::ComputeAvrsExtraConfigPre: ../pre_config/avrs-pre.yaml
-  OS::TripleO::ComputeAvrsExtraConfigPost: ../post_config/avrs-post.yaml
   OS::TripleO::Services::NovaComputeAvrs: ../docker/services/nova-compute-avrs.yaml
 
 parameter_defaults:
@@ -16,3 +14,9 @@ parameter_defaults:
   FastPathOffload: "off"
   ComputeAvrsParameters:
     KernelArgs: "hugepages=12831 iommu=pt intel_iommu=on isolcpus=1-7,9-15"
+  ComputeAvrsExtraConfig:
+    nova::config::nova_config:
+      monkey_patch:
+         value: true
+      monkey_patch_modules:
+         value: nova.virt.libvirt.vif:openstack_6wind_extensions.queens.nova.virt.libvirt.vif.decorator
