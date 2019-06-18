@@ -20,7 +20,3 @@ parameter_defaults:
          value: true
       monkey_patch_modules:
          value: nova.virt.libvirt.vif:openstack_6wind_extensions.queens.nova.virt.libvirt.vif.decorator
-  # ComputeAvrsSingle:
-    # Some
-  # ComputeAvrsSingle:
-    # Some

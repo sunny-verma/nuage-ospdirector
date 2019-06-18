@@ -101,28 +101,28 @@ resources:
       value:
         map_replace:
           - map_replace:
-            - FP_MASK: FP_MASK
-              FP_PORTS: FP_PORTS
-              CORE_PORT_MAPPING: CORE_PORT_MAPPING
-              FP_MEMORY: FP_MEMORY
-              VM_MEMORY: VM_MEMORY
-              NB_MBUF: NB_MBUF
-              FP_OFFLOAD: FP_OFFLOAD
-              FPNSDK_OPTIONS: FPNSDK_OPTIONS
-              DPVI_MASK: DPVI_MASK
-              FP_OPTIONS: FP_OPTIONS
+            - FP_MASK: FastPathMask
+              FP_PORTS: FastPathNics
+              CORE_PORT_MAPPING: CorePortMapping
+              FP_MEMORY: FastPathMemory
+              VM_MEMORY: VmMemory
+              NB_MBUF: NbMbuf
+              FP_OFFLOAD: FastPathOffload
+              FPNSDK_OPTIONS: FastPathNicDescriptors
+              DPVI_MASK: FastPathDPVI
+              FP_OPTIONS: FastPathOptions
             - values: {get_param: [RoleParameters]}
           - values:
-              FP_MASK: {get_param: FastPathMask}
-              FP_PORTS: {get_param: FastPathNics}
-              CORE_PORT_MAPPING: {get_param: CorePortMapping}
-              FP_MEMORY: {get_param: FastPathMemory}
-              VM_MEMORY: {get_param: VmMemory}
-              NB_MBUF: {get_param: NbMbuf}
-              FP_OFFLOAD: {get_param: FastPathOffload}
-              FPNSDK_OPTIONS: {get_param: FastPathNicDescriptors}
-              DPVI_MASK: {get_param: FastPathDPVI}
-              FP_OPTIONS: {get_param: FastPathOptions}
+              FastPathMask: {get_param: FastPathMask}
+              FastPathNics: {get_param: FastPathNics}
+              CorePortMapping: {get_param: CorePortMapping}
+              FastPathMemory: {get_param: FastPathMemory}
+              VmMemory: {get_param: VmMemory}
+              NbMbuf: {get_param: NbMbuf}
+              FastPathOffload: {get_param: FastPathOffload}
+              FastPathNicDescriptors: {get_param: FastPathNicDescriptors}
+              FastPathDPVI: {get_param: FastPathDPVI}
+              FastPathOptions: {get_param: FastPathOptions}
 
   ContainersCommon:
     type: /usr/share/openstack-tripleo-heat-templates/docker/services/containers-common.yaml
@@ -202,79 +202,101 @@ outputs:
       host_prep_tasks:
         list_concat:
         - {get_attr: [NovaComputeAvrsDockerBase, role_data, host_prep_tasks]}
-        - - name: create repo
-            shell: createrepo /6wind/.
-          - name: Setup repo
-            yum_repository:
-              name: nuage_6wind
-              baseurl: file:///6wind
-              enabled: yes
-              gpgcheck: no
-              description: Nuage_6wind
-          - name: install base packages
-            yum:
-              name: "{{ packages }}"
-              state: present
-            vars:
-              packages:
-                - selinux-policy-nuage-avrs
-                - python-pyelftools
-                - dkms
-          - name: remove dpdk
-            yum:
-              name: dpdk
-              state: absent
-          - name: install 6wind packages
-            yum:
-              name: "6windgate*"
-              state: present
-          - name: remove nuage-openvswitch
-            yum:
-              name: nuage-openvswitch
-              state: absent
-          - name: install nuage packages
-            yum:
-              name: "{{ packages }}"
-              state: present
-            vars:
-              packages:
-                - nuage-openvswitch*
-                - nuage-metadata-agent*
-                - virtual-accelerator*
-          - name: cleanup repo
-            yum_repository:
-              name: nuage_6wind
-              state: absent
-          - name: remove repodata
-            shell: rm -rf /6wind/repodata
+        - - name: Check if 6wind is installed
+            shell: rpm -qa | grep -q 6wind
+            failed_when: false
+            register: sixwind_check
+          - name: Install 6wind and AVRS packages
+            block:
+            - name: create repo
+              shell: createrepo /6wind/.
+            - name: Setup repo
+              yum_repository:
+                name: nuage_6wind
+                baseurl: file:///6wind
+                enabled: yes
+                gpgcheck: no
+                description: Nuage_6wind
+            - name: install base packages
+              yum:
+                name: "{{ packages }}"
+                state: present
+              vars:
+                packages:
+                  - selinux-policy-nuage-avrs
+                  - python-pyelftools
+                  - dkms
+            - name: remove dpdk
+              yum:
+                name: dpdk
+                state: absent
+            - name: install 6wind packages
+              yum:
+                name: "6windgate*"
+                state: present
+            - name: remove nuage-openvswitch
+              yum:
+                name: nuage-openvswitch
+                state: absent
+            - name: install nuage packages
+              yum:
+                name: "{{ packages }}"
+                state: present
+              vars:
+                packages:
+                  - nuage-openvswitch*
+                  - nuage-metadata-agent*
+                  - virtual-accelerator*
+            - name: cleanup repo
+              yum_repository:
+                name: nuage_6wind
+                state: absent
+            - name: remove repodata
+              shell: rm -rf /6wind/repodata
+            when: sixwind_check.rc == 1
+
           - name: adding sockfolder pmd-vhost param
-            shell: crudini --set /etc/fp-vdev.ini pmd-vhost sockfolder /var/lib/vhost_sockets
-          - name: Add params to fast-path.env file
-            shell: |-
-              #!/bin/bash
-              declare -A fast_path_params
-              fast_path_params=( ["FP_MASK"]="{{FP_MASK}}" ["FP_PORTS"]="{{FP_PORTS}}" ["CORE_PORT_MAPPING"]="{{CORE_PORT_MAPPING}}" ["FP_MEMORY"]="{{FP_MEMORY}}" ["VM_MEMORY"]="{{VM_MEMORY}}" ["NB_MBUF"]="{{NB_MBUF}}" ["FP_OFFLOAD"]="{{FP_OFFLOAD}}" ["FPNSDK_OPTIONS"]="{{FPNSDK_OPTIONS}}" ["DPVI_MASK"]="{{DPVI_MASK}}" ["FP_OPTIONS"]="{{FP_OPTIONS}}")
-              for param in "${!fast_path_params[@]}" ; do
-                  FP_VAR=${fast_path_params[$param]}
-                  if [[ ! -z $FP_VAR ]] ; then
-                      echo ": \${$param:=$FP_VAR}" >> /etc/fast-path.env
-                  fi
-              done
-            vars:
-              FP_MASK: {get_attr: [RoleParametersValue, value, FP_MASK]}
-              FP_PORTS: {get_attr: [RoleParametersValue, value, FP_PORTS]}
-              CORE_PORT_MAPPING: {get_attr: [RoleParametersValue, value, CORE_PORT_MAPPING]}
-              FP_MEMORY: {get_attr: [RoleParametersValue, value, FP_MEMORY]}
-              VM_MEMORY: {get_attr: [RoleParametersValue, value, VM_MEMORY]}
-              NB_MBUF: {get_attr: [RoleParametersValue, value, NB_MBUF]}
-              FP_OFFLOAD: {get_attr: [RoleParametersValue, value, FP_OFFLOAD]}
-              FPNSDK_OPTIONS: {get_attr: [RoleParametersValue, value, FPNSDK_OPTIONS]}
-              DPVI_MASK: {get_attr: [RoleParametersValue, value, DPVI_MASK]}
-              FP_OPTIONS: {get_attr: [RoleParametersValue, value, FP_OPTIONS]}
-          - name: Restart Virtual-accelerator on AVRS nodes
-            shell: nohup sh -c 'systemctl restart virtual-accelerator && systemctl restart network' > /dev/null &
+            ini_file:
+              path: /etc/fp-vdev.ini
+              section: pmd-vhost
+              option: sockfolder
+              value: /var/lib/vhost_sockets
+          - name: Set params in fast-path.env file
+            lineinfile:
+              dest: /etc/fast-path.env
+              line: ": ${{ '{' }}{{ item.param }}:={{ item.val }}{{ '}' }}"
+              regexp: '^: \$[{]{{ item.param }}:='
+              state: present
+              create: yes
+            loop:
+                - { param: 'FP_MASK', val: {get_attr: [RoleParametersValue, value, FP_MASK]}}
+                - { param: 'FP_PORTS', val: {get_attr: [RoleParametersValue, value, FP_PORTS]}}
+                - { param: 'CORE_PORT_MAPPING', val: {get_attr: [RoleParametersValue, value, CORE_PORT_MAPPING]}}
+                - { param: 'FP_MEMORY', val: {get_attr: [RoleParametersValue, value, FP_MEMORY]}}
+                - { param: 'VM_MEMORY', val: {get_attr: [RoleParametersValue, value, VM_MEMORY]}}
+                - { param: 'NB_MBUF', val: {get_attr: [RoleParametersValue, value, NB_MBUF]}}
+                - { param: 'FP_OFFLOAD', val: {get_attr: [RoleParametersValue, value, FP_OFFLOAD]}}
+                - { param: 'FPNSDK_OPTIONS', val: {get_attr: [RoleParametersValue, value, FPNSDK_OPTIONS]}}
+                - { param: 'DPVI_MASK', val: {get_attr: [RoleParametersValue, value, DPVI_MASK]}}
+                - { param: 'FP_OPTIONS', val: {get_attr: [RoleParametersValue, value, FP_OPTIONS]}}
+            register: lineinfile_result
+
+          - name : Restarting Virtual-accelerator and Network service
+            block:
+            - name: Restart Virtual-accelerator on AVRS nodes
+              service:
+                name: virtual-accelerator
+                state: restarted
+            - name: Restart Network service on the AVRS nodes
+              # Network Service tends to fail when all the interface on the node are not up.
+              # But restart it would restart the network interface which are up anyway which solves
+              # our purpose
+              shell: nohup sh -c 'systemctl restart network' > /dev/null &
+            when: lineinfile_result.changed
+
 
       upgrade_tasks:
         get_attr: [NovaComputeAvrsDockerBase, role_data, upgrade_tasks]
       fast_forward_upgrade_tasks:
         get_attr: [NovaComputeAvrsDockerBase, role_data, fast_forward_upgrade_tasks]
+
