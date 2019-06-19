@@ -195,7 +195,7 @@ outputs:
         config_image: {get_param: DockerNovaLibvirtAvrsConfigImage}
       kolla_config:
         get_attr: [NovaComputeAvrsDockerBase, role_data, kolla_config]
-      docker_config_scripts:
+      docker_config_scripts:Making Re
         get_attr: [NovaComputeCommon, docker_config_scripts]
       docker_config:
         get_attr: [NovaComputeAvrsDockerBase, role_data, docker_config]

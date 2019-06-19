@@ -3,19 +3,19 @@ resource_registry:
 
 parameter_defaults:
   NovaSchedulerDefaultFilters: "RetryFilter,AvailabilityZoneFilter,RamFilter,ComputeFilter,ComputeCapabilitiesFilter,ImagePropertiesFilter,ServerGroupAntiAffinityFilter,ServerGroupAffinityFilter,PciPassthroughFilter,NUMATopologyFilter,AggregateInstanceExtraSpecsFilter"
-  ComputeAvrsSingleExtraConfig:
+  NovaComputeAvrsSingleExtraConfig:
     nova::config::nova_config:
       DEFAULT/monkey_patch:
          value: true
       DEFAULT/monkey_patch_modules:
          value: nova.virt.libvirt.vif:openstack_6wind_extensions.queens.nova.virt.libvirt.vif.decorator
-  ComputeAvrsDualExtraConfig:
+  NovaComputeAvrsDualExtraConfig:
     nova::config::nova_config:
       DEFAULT/monkey_patch:
          value: true
       DEFAULT/monkey_patch_modules:
          value: nova.virt.libvirt.vif:openstack_6wind_extensions.queens.nova.virt.libvirt.vif.decorator
-  ComputeAvrsSingleParameters:
+  NovaComputeAvrsSingleParameters:
     KernelArgs: "hugepages=12831 iommu=pt intel_iommu=on isolcpus=1-7"
     FastPathNics: "0000:06:00.1 0000:06:00.2"
     FastPathMask: "1"
@@ -24,7 +24,7 @@ parameter_defaults:
     FastPathDPVI: "0"
     FastPathOffload: "off"
     NovaVcpuPinSet: "2-7"
-  ComputeAvrsDualParameters:
+  NovaComputeAvrsDualParameters:
     KernelArgs: "hugepages=12831 iommu=pt intel_iommu=on isolcpus=1-7,9-15"
     FastPathNics: "0000:06:00.1 0000:06:00.2"
     FastPathMask: "1,9"
