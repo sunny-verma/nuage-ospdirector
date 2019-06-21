@@ -176,7 +176,7 @@ The integration includes the following steps:
     - See the `Sample Templates`_ section for some probable values of the parameters in the ``neutron-nuage-config.yaml`` and ``nova-nuage-config.yaml`` files.
     - For AVRS integration, some of the parameters in ``fast-path.env`` needs to be configured in the Heat templates. We use ``compute-avrs-environment.yaml`` environment file to configure these values.
     - For AVRS integration, see the `Sample Templates`_ section for some probable values of the parameters in the ``compute-avrs-environment.yaml`` file and we also need to create a new AVRS role similar to the upstream Compute role.
-    - For AVRS intergration, we can also create Multiple roles which we can pass different sets of configuration on those AVRS Compute Node. Sample enviroment file can be found `here <../../nuage-tripleo-heat-templates/environments/avrs-multirole-environment-sample.yaml>`_
+    - For AVRS intergration, we can also create Multiple roles which we can pass different sets of configuration on those AVRS Compute Node. Sample enviroment file can be found `here <../../nuage-tripleo-heat-templates/environments/compute-avrs-multirole-environment.yaml>`_
 
 
 * Updating the Docker Images
@@ -287,9 +287,10 @@ The steps for modifying overcloud-full.qcow2 are provided in the README.md file:
 
 
 Phase 3: Adding Nuage Heat Templates
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Copy the nuage-tripleo-heat-templates folder form `here <../../nuage-tripleo-heat-templates>`_ to `/home/stack/` directory on undercloud.
+
 .. Note:: As an end-user, it is a best practice to manage the templates using GIT. If you are aware of git workflow, you can run following command to manage your nuage-template change via GIT.
 
 ::
@@ -302,64 +303,77 @@ Copy the nuage-tripleo-heat-templates folder form `here <../../nuage-tripleo-hea
 
 **For an AVRS integration please follow below steps as well**:
 
+1.  User can have one role for AVRS or Mutli-Roles for AVRS nodes.
 
-1. Edit an environment file called compute-avrs-environment.yaml in /home/stack/nuage-tripleo-heat-templates/environments/.
-
-a. For configuring  `/etc/fast-path.env` we set the following parameters:
-
-::
-
-    FastPathMask           =====>    FP_MASK
-    FastPathNics           =====>    FP_PORTS
-    CorePortMapping        =====>    CORE_PORT_MAPPING
-    FastPathMemory         =====>    FP_MEMORY
-    VmMemory               =====>    VM_MEMORY
-    NbMbuf                 =====>    NB_MBUF
-    FastPathOffload        =====>    FP_OFFLOAD
-    FastPathNicDescriptors =====>    FPNSDK_OPTIONS
-    FastPathDPVI           =====>    DPVI_MASK
-    FastPathOptions        =====>    FP_OPTIONS
-
-
-b. For configuring `nova.conf` we set the following parameters:
-
-::
-
-    ComputeAvrsExtraConfig:
-        nova::config::nova_config:
-          monkey_patch:
-             value: true
-          monkey_patch_modules:
-             value: nova.virt.libvirt.vif:openstack_6wind_extensions.queens.nova.virt.libvirt.vif.decorator
-
-c. For configuring kenerl arguments we set following parameters:
-
-::
-
-    KernelArgs: "hugepages=12831 iommu=pt intel_iommu=on isolcpus=1-7"
-
-.. Note:: Above kernel arguments are consumed by the another env file which include in deployment command `/usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml`
-
-2. Use the `create_compute_avrs_role.sh <../../scripts/create_roles/create_compute_avrs_role.sh>`_ to create a roles file called ``compute-avrs-role.yaml``.
+    **For single-role AVRS deployment**, use the `create_compute_avrs_role.sh <../../nuage-tripleo-heat-templates/scripts/create_roles/create_compute_avrs_role.sh>`_ to create a role file called ``compute-avrs-role.yaml``.
 
 Run using
 
 ::
+
      cd /home/stack/nuage-tripleo-heat-templates/scripts/create_roles
     ./create_compute_avrs_role.sh
 
-Above command will create a new ``ComputeAvrs``  role for your deployment, and compare it with sample compute-avrs-role-sample.yaml provided at https://github.com/nuagenetworks/nuage-ospdirector/tree/OSPD13/nuage-tripleo-heat-templates/roles/compute-avrs-role-sample.yaml .
-.. Note:: given ``compute-avrs-role.yaml`` file can get updated with newer release )
 
-For the users that what to deploy mutli-role for the AVRS. We are providing sample `environment <../../environments/compute-avrs-mutlirole-environment-sample.yaml>`_ file and automated `scrip <../../scripts/create_compute_avrs_multirole_sample.sh>`_ to create ComputeAvrsSingle & ComputeAvrsDual role. You can edit these files with your requirements to create new roles.
-You can read more about usage of roles at https://access.redhat.com/documentation/en-us/red_hat_openstack_platform/13/html-single/director_installation_and_usage/index#sect-Generate_Architecture_Specific_Roles
+Above command will create a new ``ComputeAvrs``  role for your deployment, and compare it with sample compute-avrs-role.yaml provided at `here <../../nuage-tripleo-heat-templates/roles/compute-avrs-role.yaml>`_ .
+
+
+
+    **For mutli-role AVRS deployment**, we have automated `script <../../nuage-tripleo-heat-templates/scripts/create_compute_avrs_multirole.sh>`_ to create ComputeAvrsSingle & ComputeAvrsDual role. You can edit these files with your requirements to create new roles.
+    You can read more about usage of roles at https://access.redhat.com/documentation/en-us/red_hat_openstack_platform/13/html-single/director_installation_and_usage/index#sect-Generate_Architecture_Specific_Roles
+
+Run using
 
 ::
 
-    Environment file is at: ../../environments/compute-avrs-mutlirole-environment-sample.yaml
-    Script can be run as
     cd /home/stack/nuage-tripleo-heat-templates/scripts/create_roles
     ./create_compute_avrs_multirole_sample.sh
+
+
+.. Note:: given ``compute-avrs-role.yaml`` file can get updated with newer release
+
+
+2. Edit an environment file.
+
+    **For single-role AVRS deployment** environment file can found at:  `compute-avrs-environment.yaml <../../nuage-tripleo-heat-templates/environments/compute-avrs-environment.yaml>`_ file.
+
+    **For multi-role AVRS deployment** environment file can be found at : `compute-avrs-mutlirole-environment.yaml <../../nuage-tripleo-heat-templates/environments/compute-avrs-mutlirole-environment.yaml>`_ file
+
+
+    a. For AVRS deployment we need to configure  `/etc/fast-path.env`, we set the following parameters :
+
+    ::
+
+        FastPathMask           =====>    FP_MASK
+        FastPathNics           =====>    FP_PORTS
+        CorePortMapping        =====>    CORE_PORT_MAPPING
+        FastPathMemory         =====>    FP_MEMORY
+        VmMemory               =====>    VM_MEMORY
+        NbMbuf                 =====>    NB_MBUF
+        FastPathOffload        =====>    FP_OFFLOAD
+        FastPathNicDescriptors =====>    FPNSDK_OPTIONS
+        FastPathDPVI           =====>    DPVI_MASK
+        FastPathOptions        =====>    FP_OPTIONS
+
+
+    b. For AVRS deployment we need to configure `nova.conf`, we set the following parameters :
+
+    ::
+
+        ComputeAvrsExtraConfig:
+            nova::config::nova_config:
+              monkey_patch:
+                 value: true
+              monkey_patch_modules:
+                 value: nova.virt.libvirt.vif:openstack_6wind_extensions.queens.nova.virt.libvirt.vif.decorator
+
+    c. For AVRS deployment we need to configure kernel arguments we set following parameters:
+
+    ::
+
+        KernelArgs: "hugepages=12831 iommu=pt intel_iommu=on isolcpus=1-7"
+
+    .. Note:: Above kernel arguments are consumed by the another env file which include in deployment command `/usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml`
 
 
 
@@ -440,14 +454,16 @@ This example shows how to create a deployment with one Controller node and two C
 
 For AVRS integration, follow these steps:
 
-:Step 1: Create a flavor and profile for computeavrs:
+:Step 1: Create a flavor and profile:
+
+**For single-role AVRS deployment**: `computeavrs`
 
 ::
 
     openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 1 computeavrs
     openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="computeavrs" computeavrs
 
-For multi-roles, ( assuming you want to create two different flavor for different roles )
+**For multi-role AVRS deployment**: `computeavrssingle` & `computeavrsdual`
 
 :: 
 
@@ -458,13 +474,15 @@ For multi-roles, ( assuming you want to create two different flavor for differen
     openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="computeavrsdual" computeavrsdual
 
 
-:Step 2: Assign AVRS nodes with a computeavrs profile:
+:Step 2: Set profile to AVRS nodes:
+
+**For single-role AVRS deployment:**
 
 ::
 
     openstack baremetal node set --property capabilities='profile:computeavrs,boot_option:local' <node-uuid>
 
-For multi-roles, set the nodes with different profiles:
+**For multi-role AVRS deployment:**
 
 ::
 
@@ -484,7 +502,7 @@ For multi-roles, set the nodes with different profiles:
     OvercloudComputeAvrsFlavor: computeavrs
     ComputeAvrsCount: 2
 
-For multi-roles, set the `node-info.yaml` with the corresponding role name. The following example shows how to create a deployment with one Controller node, two Compute nodes and two different multi-role Avrs nodes:
+**For multi-role AVRS deployment**, set the `node-info.yaml` with the corresponding role name. The following example shows how to create a deployment with one Controller node, two Compute nodes,  two ComputeAvrsSingle & two ComputeAvrsDual Avrs nodes:
 
 ::
 
@@ -493,9 +511,9 @@ For multi-roles, set the `node-info.yaml` with the corresponding role name. The 
     OvercloudComputeFlavor: compute
     ComputeCount: 2
     OvercloudComputeAvrsSingleFlavor: computeavrssignle
-    ComputeAvrsSingleCount: 1
+    ComputeAvrsSingleCount: 2
     OvercloudComputeAvrsSingleFlavor: computeavrsdual
-    ComputeAvrsDualCount: 1
+    ComputeAvrsDualCount: 2
 
 
 4. **(Optional)** To enable SR-IOV, perform the following instructions:
@@ -514,7 +532,7 @@ For multi-roles, set the `node-info.yaml` with the corresponding role name. The 
 
 ::
 
-    openstack overcloud roles generate Controller Compute ComputeSriov -o /home/stack/nuage-tripleo-heat-templates/roles/compute-compute-sriov-role.yaml
+    openstack overcloud roles generate Controller Compute ComputeSriov -o /home/stack/nuage-tripleo-heat-templates/roles/compute-sriov-role.yaml
 
 
 :Step 4: If deploying OpenStack Neutron SR-IOV in your overcloud, include the ``/usr/share/openstack-tripleo-heat-templates/environments/services-docker/neutron-sriov.yaml`` environment file so the director can prepare the images. When following **Phase 8 Step 4** please include below environment. The following snippet is an example on how to include this environment file:
@@ -761,7 +779,7 @@ In OSPD 13 and later, /usr/share/openstack-tripleo-heat-templates/environments/n
 
     ::
 
-        openstack overcloud roles generate Controller Compute -o /home/stack/nuage-tripleo-heat-templates/roles/compute-ironic-role.yaml
+        openstack overcloud roles generate Controller Compute -o /home/stack/nuage-tripleo-heat-templates/roles/ironic-role.yaml
 
 
     * Manually add **OS::TripleO::Services::IronicInspector** to Controller role like shown below:
@@ -837,195 +855,6 @@ Phase 8. Nuage Docker Containers.
     Ex:
     openstack overcloud deploy --templates -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml - e <remaining environment files>
 
-**Nuage containers build manually (For Nuage release less than 5.4.1u4)**
-
-1. On the Undercloud, create a directory named *Nuage-OSPD-Dockerfiles*.
-
-2. Copy all the Docker files and the nuage.repo file from https://github.com/nuagenetworks/nuage-ospdirector/tree/OSPD13/nuage-ospd13-dockerfiles to the Nuage-OSPD-Dockerfiles directory.
-
-3. For the AVRS integration, copy the nova-compute-avrs-dockerfile file and nuage_6wind.repo from https://github.com/nuagenetworks/nuage-ospdirector/tree/OSPD13/nuage-ospd13-dockerfiles/ to the Nuage-OSPD-Dockerfiles directory.
-
-4. Configure the Overcloud to use one of the registry methods: https://access.redhat.com/documentation/en-us/red_hat_openstack_platform/13/html/director_installation_and_usage/configuring-a-container-image-source.
-
-5. Use above registry document to generate the ``/home/stack/templates/overcloud_images.yaml`` environment file, which has the container image locations.
-
-6. Get the <tag> to which the container images point:
-
-::
-
-    DockerHeatApiCfnImage: registry.access.redhat.com/rhosp13/openstack-heat-api-cfn:<tag>
-    Example:
-    DockerHeatApiCfnImage: registry.access.redhat.com/rhosp13/openstack-heat-api-cfn:13.0-60.1543534138
-
-    DockerHeatApiImage: registry.access.redhat.com/rhosp13/openstack-heat-api:<tag>
-    Example:
-    DockerHeatApiImage: registry.access.redhat.com/rhosp13/openstack-heat-api:13.0-61.1543534111
-
-    DockerHeatEngineImage: registry.access.redhat.com/rhosp13/openstack-heat-engine:<tag>
-    Example:
-    DockerHeatEngineImage: registry.access.redhat.com/rhosp13/openstack-heat-engine:13.0-60.1543534138
-
-    DockerHorizonImage: registry.access.redhat.com/rhosp13/openstack-horizon:<tag>
-    Example:
-    DockerHorizonImage: registry.access.redhat.com/rhosp13/openstack-horizon:13.0-60.1543534103
-
-    DockerNeutronConfigImage: registry.access.redhat.com/rhosp13/openstack-neutron-server:<tag>
-    Example:
-    DockerNeutronConfigImage: registry.access.redhat.com/rhosp13/openstack-neutron-server:13.0-60.1543534138
-    
-    # AVRS Integration
-    DockerNovaComputeImage: registry.access.redhat.com/rhosp13/openstack-nova-compute:<tag>
-    Example:
-    DockerNovaComputeImage: registry.access.redhat.com/rhosp13/openstack-nova-compute:13.0-72
-
-
-
-7. **(Optional)** For Ironic Inspector Integration, to discover tag for ironic-inspector run below command and use the generated tag for nuage-ironic-inspector-dockerfile when following step 8
-
-::
-
-    [stack@director ~]$ source ~/stackrc
-    (undercloud) [stack@director ~] openstack overcloud container image tag discover --image registry.access.redhat.com/rhosp13/openstack-ironic-inspector:latest --tag-from-label {version}-{release}
-    
-    13.0-61.1543534104
-
-
-8. For all the Docker files in the Nuage-OSPD-Dockerfiles directory, change the ``<tag>`` of the Docker base image to point to the same tag in ``/home/stack/templates/overcloud_images.yaml`` .
-
-::
-
-    FROM <docker-image-name>:<tag>
-    Example:
-    FROM registry.access.redhat.com/rhosp13/openstack-neutron-server:13.0-60.1543534138
-
-
-9. For all the Docker files in the Nuage-OSPD-Dockerfiles directory, provide the label that is being used on your setup.
-
-::
-
-    LABEL name="<undercloud-ip>:8787/rhosp13/openstack-nuage-neutron-server"
-    Example:
-    LABEL name="192.168.24.1:8787/rhosp13/openstack-nuage-neutron-server"
-
-
-10. Set the baseurl in nuage.repo to point to the URL of the Nuage repository that hosts all of the required Nuage packages.
-
-::
-
-    baseurl = <baseurl>
-
-
-11. For the AVRS integration, set the baseurl in nuage_6wind.repo to point to the URL of the Nuage repository that hosts all of the required 6wind and AVRS packages.
-
-12. Build the Nuage Docker images from Nuage-OSPD-Dockerfiles directory:
-
-::
-
-    By default on undercloud, local registry will be listening on port 8787.
-    Let us consider Undercloud IP as 192.168.24.1
-
-    #For Nuage Heat Engine
-    docker build -t <undercloud-ip>:8787/rhosp13/openstack-nuage-heat-engine:<tag> -f nuage-heat-engine-dockerfile .
-
-    Example:
-    docker build -t 192.168.24.1:8787/rhosp13/openstack-nuage-heat-engine:<tag> -f nuage-heat-engine-dockerfile .
-
-    #For Nuage Heat API and Heat API Cron because both these services point to the same docker image
-    docker build -t <undercloud-ip>:8787/rhosp13/openstack-nuage-heat-api:<tag> -f nuage-heat-api-dockerfile .
-
-    Example:
-    docker build -t 192.168.24.1:8787/rhosp13/openstack-nuage-heat-api:<tag> -f nuage-heat-api-dockerfile .
-
-    #For Nuage Heat API-CFN
-    docker build -t <undercloud-ip>:8787/rhosp13/openstack-nuage-heat-api-cfn:<tag> -f nuage-heat-api-cfn-dockerfile .
-
-    Example:
-    docker build -t 192.168.24.1:8787/rhosp13/openstack-nuage-heat-api-cfn:<tag> -f nuage-heat-api-cfn-dockerfile .
-
-    #For Nuage Horizon
-    docker build -t <undercloud-ip>:8787/rhosp13/openstack-nuage-horizon:<tag> -f nuage-horizon-dockerfile .
-
-    Example:
-    docker build -t 192.168.24.1:8787/rhosp13/openstack-nuage-horizon:<tag> -f nuage-horizon-dockerfile .
-
-    #For Nuage Neutron
-    docker build -t <undercloud-ip>:8787/rhosp13/openstack-nuage-neutron-server:<tag> -f nuage-neutron-server-dockerfile .
-
-    Example:
-    docker build -t 192.168.24.1:8787/rhosp13/openstack-nuage-neutron-server:<tag> -f nuage-neutron-server-dockerfile .
-
-    # AVRS integration
-    docker build -t <undercloud-ip>:8787/rhosp13/openstack-nuage-nova-compute-avrs:<tag> -f nova-compute-avrs-dockerfile .
-
-    Example:
-    docker build -t 192.168.24.1:8787/rhosp13/openstack-nuage-nova-compute-avrs:<tag> -f nova-compute-avrs-dockerfile .
-
-    # For Nuage Ironic Inspector
-    docker build -t <undercloud-ip>:8787/rhosp13/openstack-nuage-ironic-inspector:<tag> -f nuage-ironic-inspector-dockerfile .
-
-    Example:
-    docker build -t 192.168.24.1:8787/rhosp13/openstack-nuage-ironic-inspector:<tag> -f nuage-ironic-inspector-dockerfile .
-
-
-13. During the deployment, configure the Overcloud to use the Nuage container images instead of the Red Hat registry images by pushing the build Nuage container images to the local registry.
-
-::
-
-    docker push 192.168.24.1:8787/rhosp13/openstack-nuage-heat-engine:<tag>
-    docker push 192.168.24.1:8787/rhosp13/openstack-nuage-heat-api:<tag>
-    docker push 192.168.24.1:8787/rhosp13/openstack-nuage-heat-api-cfn:<tag>
-    docker push 192.168.24.1:8787/rhosp13/openstack-nuage-horizon:<tag>
-    docker push 192.168.24.1:8787/rhosp13/openstack-nuage-neutron-server:<tag>
-
-
-14. During the AVRS deployment, also configure the Overcloud to use the Nuage AVRS container images:
-
-::
-
-    docker push 192.168.24.1:8787/rhosp13/openstack-nuage-nova-compute-avrs:<tag>
-
-
-15. During Ironic-Inspector Integration, also configure the Overcloud to use the Nuage Ironic-Inspector container image:
-
-::
-
-    docker push 192.168.24.1:8787/rhosp13/openstack-nuage-ironic-inspector:<tag>
-
-
-16. Change the /home/stack/templates/overcloud_images.yaml file to point Heat, Horizon, Neutron, and their Docker configuration images to ones in the local registry:
-
-::
-
-    DockerHeatApiCfnConfigImage: 192.168.24.1:8787/rhosp13/openstack-nuage-heat-api-cfn:<tag>
-    DockerHeatApiCfnImage: 192.168.24.1:8787/rhosp13/openstack-nuage-heat-api-cfn:<tag>
-    DockerHeatApiConfigImage: 192.168.24.1:8787/rhosp13/openstack-nuage-heat-api:<tag>
-    DockerHeatApiImage: 192.168.24.1:8787/rhosp13/openstack-nuage-heat-api:<tag>
-    DockerHeatConfigImage: 192.168.24.1:8787/rhosp13/openstack-nuage-heat-api:<tag>
-    DockerHeatEngineImage: 192.168.24.1:8787/rhosp13/openstack-nuage-heat-engine:<tag>
-    DockerHorizonConfigImage: 192.168.24.1:8787/rhosp13/openstack-nuage-horizon:<tag>
-    DockerHorizonImage: 192.168.24.1:8787/rhosp13/openstack-nuage-horizon:<tag>
-    DockerNeutronApiImage: 192.168.24.1:8787/rhosp13/openstack-nuage-neutron-server:<tag>
-    DockerNeutronConfigImage: 192.168.24.1:8787/rhosp13/openstack-nuage-neutron-server:<tag>
-
-
-17. For AVRS integration, change the /home/stack/templates/overcloud_images.yaml file and add the following parameters to point the AVRS Docker images to ones in the local registry:
-
-::
-
-    DockerNovaComputeAvrsImage: 192.168.24.1:8787/rhosp13/openstack-nuage-nova-compute-avrs:<tag>
-    DockerNovaLibvirtAvrsConfigImage: 192.168.24.1:8787/rhosp13/openstack-nuage-nova-compute-avrs:<tag>
-
-
-18. For Ironic Inspector Integration, change the /home/stack/templates/overcloud_images.yaml file and add the following parameters to point Ironic Inspector images to ones in the local registry:
-
-::
-
-    DockerIronicInspectorImage: 192.168.24.1:8787/rhosp13/openstack-nuage-ironic-inspector:<tag>
-    DockerIronicInspectorConfigImage: 192.168.24.1:8787/rhosp13/openstack-nuage-ironic-inspector:<tag>
-
-
-19. Create the ``docker-insecure-registry.yaml`` at ``/home/stack/templates/docker-insecure-registry.yaml``. See the sample in the "Sample Templates" section.
-
 
 Phase 9: Deploy the Overcloud.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1041,8 +870,15 @@ Use the ``openstack overcloud deploy`` command options to pass the environment f
 
 For AVRS, also include following role and environment files.
 
-    * compute-avrs-role.yaml
-    * compute-avrs-environment.yaml
+    For single role deployment:
+
+        * compute-avrs-role.yaml
+        * compute-avrs-environment.yaml
+
+    For multi-role deployment:
+
+        * compute-avrs-multirole.yaml
+        * compute-avrs-multirole-environment.yaml
 
 
 1. For a non-HA Overcloud deployment, use one of the following commands:
@@ -1099,7 +935,7 @@ For AVRS, also include following role and environment files.
 
 ::
 
-    openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/roles/compute-ironic-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/services/ironic.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/services/ironic-inspector.yaml -e /home/stack/templates/ironic.yaml -e /home/stack/templates/ironic-inspector.yaml --ntp-server ntp-server
+    openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/roles/ironic-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/services/ironic.yaml -e /usr/share/openstack-tripleo-heat-templates/environments/services/ironic-inspector.yaml -e /home/stack/templates/ironic.yaml -e /home/stack/templates/ironic-inspector.yaml --ntp-server ntp-server
 
 
 where:
@@ -1113,7 +949,7 @@ where:
    * ``compute-sriov-role.yaml`` Enables services required for Compute Sriov role
    * ``neutron-sriov.yaml`` Neutron SRIOV specific parameter values
    * ``compute-avrs-role.yaml`` Enables services required for Compute Avrs role
-   * ``compute-ironic-role.yaml`` Enables Ironic Inspector service for Controller role
+   * ``ironic-role.yaml`` Enables Ironic Inspector service for Controller role
 
 
 
