@@ -29,8 +29,7 @@ import os
 # 5. Install VRS
 # 6. Unsubscribe from RHEL
 # 7. Add the files post-patching
-#
-#
+
 
 ### List of Nuage packages
 NUAGE_PACKAGES = "nuage-metadata-agent nuage-puppet-modules " \
@@ -162,36 +161,6 @@ def uninstall_packages(image):
         '"yum remove openvswitch -y" -a %s --memsize %s '
         '--selinux-relabel' % (
         image, VIRT_CUSTOMIZE_MEMSIZE))
-
-
-#####
-# Function to add files based on the version
-#####
-
-def add_files(image, version, workingDir):
-    version = int(version)
-    if version == 13:
-        cmds_run(['cat <<EOT > version_13 \n'
-                  'cp /etc/puppet/modules/nuage/manifests/13_files'
-                  '/neutron_init.pp '
-                  '/etc/puppet/modules/neutron/manifests/init.pp \n'
-                  'cp /etc/puppet/modules/nuage/manifests/13_files'
-                  '/conductor.pp '
-                  '/etc/puppet/modules/ironic/manifests/conductor.pp \n'
-                  'EOT'])
-        virt_customize(
-            '"mkdir -p /etc/puppet/modules/nuage/manifests/13_files" '
-            '-a %s --memsize %s --selinux-relabel' % (
-                image, VIRT_CUSTOMIZE_MEMSIZE))
-        virt_copy(
-            '%s %s/13_files/* '
-            '/etc/puppet/modules/nuage/manifests/13_files' % (
-            image, workingDir))
-        virt_customize_run(
-            'version_13 -a %s --memsize %s --selinux-relabel' % (
-            image, VIRT_CUSTOMIZE_MEMSIZE))
-
-        cmds_run(['rm -f version_13'])
 
 
 #####
@@ -391,9 +360,6 @@ def image_patching(args):
 
     if args.RhelUserName and args.RhelPassword and args.RhelPool:
         rhel_remove_subscription(args.ImageName)
-
-    cmds_run(['echo "Adding files post-patching"'])
-    add_files(args.ImageName, args.Version, workingDir)
 
     cmds_run(['echo "Done"'])
 
