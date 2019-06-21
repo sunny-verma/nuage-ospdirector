@@ -778,9 +778,66 @@ In OSPD 13 and later, /usr/share/openstack-tripleo-heat-templates/environments/n
 7. Please follow **Phase 6** steps again for verfication of all the nodes are assigned with correct flavors.
 
 
+Phase 8. Nuage Docker Containers.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Phase 8: Build the Docker images.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Nuage containers from Redhat Partner Container Catalog (For Nuage release greater than or equals 5.4.1u4)**
+
+1. On the Undercloud, use the following instructions to get Nuage images from a Red Hat container registry using registry service account tokens. You will need to `create a registry service account <https://access.redhat.com/terms-based-registry>`_ to use prior to completing the following task.
+
+::
+
+    $ docker login registry.connect.redhat.com
+    Username: ${REGISTRY-SERVICE-ACCOUNT-USERNAME}
+    Password: ${REGISTRY-SERVICE-ACCOUNT-PASSWORD}
+    Login Succeeded!
+
+2. Now change the working directory to /home/stack/nuage-tripleo-heat-templates/scripts/pulling_nuage_containers/
+
+::
+
+    $ cd /home/stack/nuage-tripleo-heat-templates/scripts/pulling_nuage_containers/
+
+3. Configure nuage_container_config.yaml with appropriate values and a sample is given below.
+
+::
+
+    #OpenStack version number
+    version: 13
+    #Nuage Release and format is <Major-release, use '-' instead of '.'>-<Minor-release>-<Updated-release>
+    # for exmaple: Nuage release 5.4.1u4 please enter following
+    release: 5-4-1-u4
+    #Tag for Nuage container images
+    tag: latest
+    #Undercloud Local Registry IP Address : PORT
+    local_registry: 192.168.24.1:8787
+    #List of Nuage containers
+    nuage_images: ['heat-api-cfn', 'heat-api', 'heat-engine', 'horizon', 'neutron-server', 'nova-compute']
+
+4. Now execute `nuage_containers_pull.py` script by passing nuage_config.yaml to "--nuage-config" argument.
+
+::
+
+    $ python nuage_containers_pull.py --nuage-config nuage_config.yaml
+
+5. The above command does the below four steps:
+
+:Step1: Pull Nuage container images from Red Hat Registry
+
+:Step2: Retag the Nuage container images, by modifying the registry to point to local registry
+
+:Step3: Push the retagged Nuage container images to local registry
+
+:Step4: Remove the container images that got created in step1 and step2 from undercloud machine.
+
+6. After executing `nuage_containers_pull.py`, there will be a nuage_overcloud_images.yaml created under /home/stack/nuage-tripleo-heat-templates/environments and always /home/stack/templates/overcloud_images.yaml should take precedence over this file.
+
+::
+
+    Ex:
+    openstack overcloud deploy --templates -e /home/stack/templates/overcloud_images.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nuage_overcloud_images.yaml - e <remaining environment files>
+
+**Nuage containers build manually (For Nuage release less than 5.4.1u4)**
 
 1. On the Undercloud, create a directory named *Nuage-OSPD-Dockerfiles*.
 
