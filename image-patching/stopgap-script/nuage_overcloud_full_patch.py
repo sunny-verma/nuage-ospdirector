@@ -28,8 +28,6 @@ import os
 # 4. Install neutron-client, netlib, metadata agent
 # 5. Install VRS
 # 6. Unsubscribe from RHEL
-# 7. Add the files post-patching
-
 
 ### List of Nuage packages
 NUAGE_PACKAGES = "nuage-metadata-agent nuage-puppet-modules " \

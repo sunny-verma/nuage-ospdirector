@@ -1477,25 +1477,69 @@ compute-avrs-environment.yaml for AVRS integration
 ::
 
     resource_registry:
-      OS::TripleO::ComputeAvrs::NodeUserData: ../firstboot/avrs-first-boot.yaml
-      OS::TripleO::ComputeAvrsExtraConfigPost: ../extraconfig/post_deploy/avrs-post.yaml
+      OS::TripleO::Services::NovaComputeAvrs: ../docker/services/nova-compute-avrs.yaml
 
     parameter_defaults:
       NovaVcpuPinSet: "2-7,10-15"
       # An array of filters used by Nova to filter a node.These filters will be applied in the order they are listed,
       # so place your most restrictive filters first to make the filtering process more efficient.
       NovaSchedulerDefaultFilters: "RetryFilter,AvailabilityZoneFilter,RamFilter,ComputeFilter,ComputeCapabilitiesFilter,ImagePropertiesFilter,ServerGroupAntiAffinityFilter,ServerGroupAffinityFilter,PciPassthroughFilter,NUMATopologyFilter,AggregateInstanceExtraSpecsFilter"
-      # Kernel arguments for Compute node
-      ComputeKernelArgs: "hugepages=12831 iommu=pt intel_iommu=on"
-      # A list or range of physical CPU cores to be tuned.
-      # The given args will be appended to the tuned cpu-partitioning profile.
-      HostIsolatedCoreList: "1-7,9-15"
       FastPathNics: "0000:06:00.1 0000:06:00.2"
       FastPathMask: "1,9"
       FastPathNicDescriptors: "--nb-rxd=4096 --nb-txd=4096"
       FastPathOptions: "\"--mod-opt=fp-vswitch:--flows=200000 --max-nfct=40000\""
       FastPathDPVI: "0"
       FastPathOffload: "off"
+      ComputeAvrsParameters:
+        KernelArgs: "hugepages=12831 iommu=pt intel_iommu=on isolcpus=1-7,9-15"
+      ComputeAvrsExtraConfig:
+        nova::config::nova_config:
+          monkey_patch:
+             value: true
+          monkey_patch_modules:
+             value: nova.virt.libvirt.vif:openstack_6wind_extensions.queens.nova.virt.libvirt.vif.decorator
+
+compute-avrs-multirole-environment.yaml for AVRS integration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+::
+
+    resource_registry:
+      OS::TripleO::Services::NovaComputeAvrs: ../docker/services/nova-compute-avrs.yaml
+
+    parameter_defaults:
+      NovaSchedulerDefaultFilters: "RetryFilter,AvailabilityZoneFilter,RamFilter,ComputeFilter,ComputeCapabilitiesFilter,ImagePropertiesFilter,ServerGroupAntiAffinityFilter,ServerGroupAffinityFilter,PciPassthroughFilter,NUMATopologyFilter,AggregateInstanceExtraSpecsFilter"
+      NovaComputeAvrsSingleExtraConfig:
+        nova::config::nova_config:
+          DEFAULT/monkey_patch:
+             value: true
+          DEFAULT/monkey_patch_modules:
+             value: nova.virt.libvirt.vif:openstack_6wind_extensions.queens.nova.virt.libvirt.vif.decorator
+      NovaComputeAvrsDualExtraConfig:
+        nova::config::nova_config:
+          DEFAULT/monkey_patch:
+             value: true
+          DEFAULT/monkey_patch_modules:
+             value: nova.virt.libvirt.vif:openstack_6wind_extensions.queens.nova.virt.libvirt.vif.decorator
+      NovaComputeAvrsSingleParameters:
+        KernelArgs: "hugepages=12831 iommu=pt intel_iommu=on isolcpus=1-7"
+        FastPathNics: "0000:06:00.1 0000:06:00.2"
+        FastPathMask: "1"
+        FastPathNicDescriptors: "--nb-rxd=4096 --nb-txd=4096"
+        FastPathOptions: "\"--mod-opt=fp-vswitch:--flows=200000 --max-nfct=40000\""
+        FastPathDPVI: "0"
+        FastPathOffload: "off"
+        NovaVcpuPinSet: "2-7"
+      NovaComputeAvrsDualParameters:
+        KernelArgs: "hugepages=12831 iommu=pt intel_iommu=on isolcpus=1-7,9-15"
+        FastPathNics: "0000:06:00.1 0000:06:00.2"
+        FastPathMask: "1,9"
+        FastPathNicDescriptors: "--nb-rxd=4096 --nb-txd=4096"
+        FastPathOptions: "\"--mod-opt=fp-vswitch:--flows=200000 --max-nfct=40000\""
+        FastPathDPVI: "0"
+        FastPathOffload: "off"
+        NovaVcpuPinSet: "2-7,10-15"
+
 
 
 
