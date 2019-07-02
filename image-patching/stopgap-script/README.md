@@ -23,31 +23,31 @@ Now run the below command by providing required values
 Make sure to copy GPG-Key file(s) to the same folder as "nuage_overcloud_full_patch.py" patching script location.
 
 For single GPG-key run the below command
-`python nuage_overcloud_full_patch.py --RhelUserName='<value>' --RhelPassword='<value>' --RhelPool=<pool-id> --RepoName=<value> --RepoBaseUrl=http://IP/reponame --ImageName='<value>' --Version=13 --RpmPublicKey='GPG-Key'`
+`python nuage_overcloud_full_patch.py --RhelUserName='<value>' --RhelPassword='<value>' --RhelPool=<pool-id> --RepoName=<value> --RepoBaseUrl=http://IP/reponame --ImageName='<value>' --RpmPublicKey='GPG-Key'`
 
 
 For AVRS Integration with single GPG-key, please run below command
 
-`python nuage_overcloud_full_patch.py --RhelUserName='<value>' --RhelPassword='<value>' --RhelPool=<pool-id> --RepoName=<value> --RepoBaseUrl=http://IP/reponame --AVRSBaseUrl=http://IP/reponame --ImageName='<value>' --Version=13 --RpmPublicKey='GPG-Key'`
+`python nuage_overcloud_full_patch.py --RhelUserName='<value>' --RhelPassword='<value>' --RhelPool=<pool-id> --RepoName=<value> --RepoBaseUrl=http://IP/reponame --AVRSBaseUrl=http://IP/reponame --ImageName='<value>' --RpmPublicKey='GPG-Key'`
 
 
 For passing multiple GPG-keys, please repeat option "--RpmPublicKey" to set multiple GPG keys, for example
 
-`python nuage_overcloud_full_patch.py --RhelUserName='<value>' --RhelPassword='<value>' --RhelPool=<pool-id> --RepoName=<value> --RepoBaseUrl=http://IP/reponame --ImageName='<value>' --Version=13 --RpmPublicKey='GPG-Key1' --RpmPublicKey='GPG-Key2'`
+`python nuage_overcloud_full_patch.py --RhelUserName='<value>' --RhelPassword='<value>' --RhelPool=<pool-id> --RepoName=<value> --RepoBaseUrl=http://IP/reponame --ImageName='<value>' --RpmPublicKey='GPG-Key1' --RpmPublicKey='GPG-Key2'`
 
 
 For AVRS Integration with multiple GPG-keys, please run below command
 
-`python nuage_overcloud_full_patch.py --RhelUserName='<value>' --RhelPassword='<value>' --RhelPool=<pool-id> --RepoName=<value> --RepoBaseUrl=http://IP/reponame --AVRSBaseUrl=http://IP/reponame --ImageName='<value>' --Version=13 --RpmPublicKey='GPG-Key1' --RpmPublicKey='GPG-Key2'`
+`python nuage_overcloud_full_patch.py --RhelUserName='<value>' --RhelPassword='<value>' --RhelPool=<pool-id> --RepoName=<value> --RepoBaseUrl=http://IP/reponame --AVRSBaseUrl=http://IP/reponame --ImageName='<value>'  --RpmPublicKey='GPG-Key1' --RpmPublicKey='GPG-Key2'`
 
 
 ### Without GPG Key
 
-`python nuage_overcloud_full_patch.py --RhelUserName='<value>' --RhelPassword='<value>' --RhelPool=<pool-id> --RepoName=<value> --RepoBaseUrl=http://IP/reponame --ImageName='<value>' --Version=13 --no-signing-key`
+`python nuage_overcloud_full_patch.py --RhelUserName='<value>' --RhelPassword='<value>' --RhelPool=<pool-id> --RepoName=<value> --RepoBaseUrl=http://IP/reponame --ImageName='<value>'  --no-signing-key`
 
 For AVRS Integration, Please run below command
 
-`python nuage_overcloud_full_patch.py --RhelUserName='<value>' --RhelPassword='<value>' --RhelPool=<pool-id> --RepoName=<value> --RepoBaseUrl=http://IP/reponame --AVRSBaseUrl=http://IP/reponame --ImageName='<value>' --Version=13 --no-signing-key`
+`python nuage_overcloud_full_patch.py --RhelUserName='<value>' --RhelPassword='<value>' --RhelPool=<pool-id> --RepoName=<value> --RepoBaseUrl=http://IP/reponame --AVRSBaseUrl=http://IP/reponame --ImageName='<value>'  --no-signing-key`
 
 This script takes in following input parameters:   
   * RhelUserName is the user name for the RedHat Enterprise Linux subscription.
