@@ -302,7 +302,7 @@ User can have Single or Mutli-Roles for AVRS nodes.
 
     Above command will create a new ``ComputeAvrs``  role for your deployment, and compare it with sample `compute-avrs-role-sample.yaml <../../nuage-tripleo-heat-templates/templates/compute-avrs-role-sample.yaml>`_ .
 
-    **For mutli-role AVRS deployment**, we have automated `script <../../nuage-tripleo-heat-templates/scripts/create_compute_avrs_multirole.sh>`_ to create ComputeAvrsSingle & ComputeAvrsDual role. You can edit these files with your requirements to create new roles.
+    **For mutli-role AVRS deployment**, we have automated `script <../../nuage-tripleo-heat-templates/scripts/create_roles/create_compute_avrs_multirole.sh>`_ to create ComputeAvrsSingle & ComputeAvrsDual role. You can edit these files with your requirements to create new roles.
     You can read more about usage of roles at https://access.redhat.com/documentation/en-us/red_hat_openstack_platform/13/html-single/director_installation_and_usage/index#sect-Generate_Architecture_Specific_Roles
 
     Run using
@@ -360,7 +360,7 @@ Run the following commands.
 Phase 7: Create the Heat templates.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. Go to /usr/share/openstack-tripleo-heat-templates/environments/ on the Undercloud machine.
+1. Go to `/home/stack/nuage-tripleo-heat-templates/environments/` on the Undercloud machine.
 
 2. Create these templates, and add the values for the VSD IP, CMS ID, and other parameters in the following files. Go to the `Parameters in the Heat Templates`_ section for details about the parameters in the templates.
 
@@ -391,10 +391,11 @@ This example shows how to create a deployment with one Controller node and two C
 
 ::
 
-    OvercloudControllerFlavor: control
-    ControllerCount: 1
-    OvercloudComputeFlavor: compute
-    ComputeCount: 2
+    parameter_defaults:
+      OvercloudControllerFlavor: control
+      ControllerCount: 1
+      OvercloudComputeFlavor: compute
+      ComputeCount: 2
 
 
 
@@ -461,25 +462,27 @@ This example shows how to create a deployment with one Controller node and two C
 
 ::
 
-    OvercloudControllerFlavor: control
-    ControllerCount: 1
-    OvercloudComputeFlavor: compute
-    ComputeCount: 2
-    OvercloudComputeAvrsFlavor: computeavrs
-    ComputeAvrsCount: 2
+    parameter_defaults:
+      OvercloudControllerFlavor: control
+      ControllerCount: 1
+      OvercloudComputeFlavor: compute
+      ComputeCount: 2
+      OvercloudComputeAvrsFlavor: computeavrs
+      ComputeAvrsCount: 2
 
 **For multi-role AVRS deployment**, set the `node-info.yaml` with the corresponding role name. The following example shows how to create a deployment with one Controller node, two Compute nodes,  two ComputeAvrsSingle & two ComputeAvrsDual Avrs nodes:
 
 ::
 
-    OvercloudControllerFlavor: control
-    ControllerCount: 1
-    OvercloudComputeFlavor: compute
-    ComputeCount: 2
-    OvercloudComputeAvrsSingleFlavor: computeavrssignle
-    ComputeAvrsSingleCount: 2
-    OvercloudComputeAvrsSingleFlavor: computeavrsdual
-    ComputeAvrsDualCount: 2
+    parameter_defaults:
+      OvercloudControllerFlavor: control
+      ControllerCount: 1
+      OvercloudComputeFlavor: compute
+      ComputeCount: 2
+      OvercloudComputeAvrsSingleFlavor: computeavrssingle
+      ComputeAvrsSingleCount: 2
+      OvercloudComputeAvrsSingleFlavor: computeavrsdual
+      ComputeAvrsDualCount: 2
 
 
 :Step 5: Modify avrs environment file in /home/stack/nuage-tripleo-heat-templates/environments/.
@@ -577,12 +580,13 @@ This example shows how to create a deployment with one Controller node and two C
 
 ::
 
-    OvercloudControllerFlavor: control
-    ControllerCount: 1
-    OvercloudComputeFlavor: compute
-    ComputeCount: 2
-    OvercloudComputeSriovFlavor: computesriov
-    ComputeSriovCount: 2
+    parameter_defaults:
+      OvercloudControllerFlavor: control
+      ControllerCount: 1
+      OvercloudComputeFlavor: compute
+      ComputeCount: 2
+      OvercloudComputeSriovFlavor: computesriov
+      ComputeSriovCount: 2
 
 
 :Step 8: To deploy the Overcloud, additional parameters and template files are required.
@@ -1203,7 +1207,7 @@ neutron-nuage-config.yaml
       OS::TripleO::Services::NeutronOvsAgent: OS::Heat::None
       OS::TripleO::Services::ComputeNeutronOvsAgent: OS::Heat::None
       # Override the NeutronCorePlugin to use Nuage
-      OS::TripleO::Docker::NeutronMl2PluginBase: OS::TripleO::Services::NeutronCorePluginML2Nuage
+      OS::TripleO::Docker::NeutronMl2PluginBase: ../puppet/services/neutron-plugin-ml2-nuage.yaml
 
     parameter_defaults:
       NeutronNuageNetPartitionName: 'Nuage_Partition_13'
@@ -1269,7 +1273,7 @@ nova-nuage-config.yaml For a Virtual Setup
     # A Heat environment file which can be used to enable
     # Nuage backend on the compute, configured via puppet
     resource_registry:
-      OS::TripleO::Services::ComputeNeutronCorePlugin: OS::TripleO::Services::ComputeNeutronCorePluginNuage
+      OS::TripleO::Services::ComputeNeutronCorePlugin: ../puppet/services/neutron-compute-plugin-nuage.yaml
 
     parameter_defaults:
       NuageActiveController: '192.168.24.119'
@@ -1290,7 +1294,7 @@ nova-nuage-config.yaml For a KVM Setup
     # A Heat environment file which can be used to enable
     # Nuage backend on the compute, configured via puppet
     resource_registry:
-      OS::TripleO::Services::ComputeNeutronCorePlugin: OS::TripleO::Services::ComputeNeutronCorePluginNuage
+      OS::TripleO::Services::ComputeNeutronCorePlugin: ../puppet/services/neutron-compute-plugin-nuage.yaml
 
     parameter_defaults:
       NuageActiveController: '192.168.24.119'

@@ -358,7 +358,7 @@ Run the following commands.
 Phase 7: Create the Heat templates.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. Go to /usr/share/openstack-tripleo-heat-templates/environments/ on the Undercloud machine.
+1. Go to /home/stack/nuage-tripleo-heat-templates/environments/ on the Undercloud machine.
 
 2. Create these templates, and add the values for the VSD IP, CMS ID, and other parameters in the following files. Go to the `Parameters in the Heat Templates`_ section for details about the parameters in the templates.
 
@@ -388,11 +388,11 @@ Phase 7: Create the Heat templates.
 This example shows how to create a deployment with one Controller node and two Compute nodes.
 
 ::
-
-    OvercloudControllerFlavor: control
-    ControllerCount: 1
-    OvercloudComputeFlavor: compute
-    ComputeCount: 2
+    parameter_defaults:
+      OvercloudControllerFlavor: control
+      ControllerCount: 1
+      OvercloudComputeFlavor: compute
+      ComputeCount: 2
 
 
 
@@ -426,12 +426,13 @@ For AVRS integration, follow these steps:
 
 ::
 
-    OvercloudControllerFlavor: control
-    ControllerCount: 1
-    OvercloudComputeFlavor: compute
-    ComputeCount: 2
-    OvercloudComputeAvrsFlavor: computeavrs
-    ComputeAvrsCount: 2
+    parameter_defaults:
+      OvercloudControllerFlavor: control
+      ControllerCount: 1
+      OvercloudComputeFlavor: compute
+      ComputeCount: 2
+      OvercloudComputeAvrsFlavor: computeavrs
+      ComputeAvrsCount: 2
 
 
 :Step 5: Edit an environment file called compute-avrs-environment.yaml in /home/stack/nuage-tripleo-heat-templates/environments/.
@@ -525,20 +526,21 @@ For AVRS integration, follow these steps:
 
 ::
 
-    OvercloudControllerFlavor: control
-    ControllerCount: 1
-    OvercloudComputeFlavor: compute
-    ComputeCount: 2
-    OvercloudComputeSriovFlavor: computesriov
-    ComputeSriovCount: 2
+    parameter_defaults:
+      OvercloudControllerFlavor: control
+      ControllerCount: 1
+      OvercloudComputeFlavor: compute
+      ComputeCount: 2
+      OvercloudComputeSriovFlavor: computesriov
+      ComputeSriovCount: 2
 
 
 :Step 8: To deploy the Overcloud, additional parameters and template files are required.
 
     * Include the following parameter values in the heat template neutron-nuage-config.yaml:
-    
+
     ::
-    
+
          NeutronServicePlugins: 'NuagePortAttributes,NuageAPI,NuageL3,trunk,NuageNetTopology'
          NeutronTypeDrivers: "vlan,vxlan,flat"
          NeutronMechanismDrivers: ['nuage','nuage_sriov','sriovnicswitch']
@@ -546,15 +548,15 @@ For AVRS integration, follow these steps:
          NeutronTunnelIdRanges: "1:1000"
          NeutronNetworkVLANRanges: "physnet1:2:100,physnet2:2:100"
          NeutronVniRanges: "1001:2000"
-    
-    
+
+
     * Add this parameter value in the heat template nova-nuage-config.yaml:
-    
+
     ::
-    
+
         NovaPCIPassthrough: "[{"devname":"eno2","physical_network":"physnet1"},{"devname":"eno3","physical_network":"physnet2"}]"
-    
-    
+
+
     * Include "neutron-sriov.yaml" file in the Overcloud deployment command. See the sample in the "Sample Templates" section.
 
 
@@ -898,10 +900,10 @@ For AVRS, also include following role and environment files.
 ::
 
     openstack overcloud deploy --templates -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server
-    
+
     For a virtual deployment, add the --libvirt-type parameter:
     openstack overcloud deploy --templates --libvirt-type qemu -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server
-    
+
     For AVRS integration, use:
     openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/compute-avrs-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml  -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/compute-avrs-environment.yaml
 
@@ -911,10 +913,10 @@ For AVRS, also include following role and environment files.
 ::
 
     openstack overcloud deploy --templates -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server
-    
+
     For a virtual deployment, add the --libvirt-type parameter:
     openstack overcloud deploy --templates --libvirt-type qemu -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml --ntp-server ntp-server
-    
+
     For AVRS integration, use:
     openstack overcloud deploy --templates -r /home/stack/nuage-tripleo-heat-templates/templates/compute-avrs-role.yaml -e /home/stack/templates/overcloud_images.yaml -e /home/stack/templates/node-info.yaml -e /home/stack/templates/docker-insecure-registry.yaml  -e /home/stack/nuage-tripleo-heat-templates/environments/nova-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/neutron-nuage-config.yaml -e /home/stack/nuage-tripleo-heat-templates/environments/compute-avrs-environment.yaml
 
@@ -1392,7 +1394,7 @@ neutron-nuage-config.yaml
       OS::TripleO::Services::NeutronOvsAgent: OS::Heat::None
       OS::TripleO::Services::ComputeNeutronOvsAgent: OS::Heat::None
       # Override the NeutronCorePlugin to use Nuage
-      OS::TripleO::Docker::NeutronMl2PluginBase: OS::TripleO::Services::NeutronCorePluginML2Nuage
+      OS::TripleO::Docker::NeutronMl2PluginBase: ../puppet/services/neutron-plugin-ml2-nuage.yaml
 
     parameter_defaults:
       NeutronNuageNetPartitionName: 'Nuage_Partition_13'
@@ -1458,7 +1460,7 @@ nova-nuage-config.yaml For a Virtual Setup
     # A Heat environment file which can be used to enable
     # Nuage backend on the compute, configured via puppet
     resource_registry:
-      OS::TripleO::Services::ComputeNeutronCorePlugin: OS::TripleO::Services::ComputeNeutronCorePluginNuage
+      OS::TripleO::Services::ComputeNeutronCorePlugin: ../puppet/services/neutron-compute-plugin-nuage.yaml
 
     parameter_defaults:
       NuageActiveController: '192.168.24.119'
@@ -1479,7 +1481,7 @@ nova-nuage-config.yaml For a KVM Setup
     # A Heat environment file which can be used to enable
     # Nuage backend on the compute, configured via puppet
     resource_registry:
-      OS::TripleO::Services::ComputeNeutronCorePlugin: OS::TripleO::Services::ComputeNeutronCorePluginNuage
+      OS::TripleO::Services::ComputeNeutronCorePlugin: ../puppet/services/neutron-compute-plugin-nuage.yaml
 
     parameter_defaults:
       NuageActiveController: '192.168.24.119'
