@@ -117,3 +117,36 @@ outputs:
         include tripleo::profile::base::neutron::plugins::ml2
       metadata_settings:
         get_attr: [NeutronMl2Base, role_data, metadata_settings]
+      host_prep_tasks:
+        # Only install when nuage is not installed already.
+        list_concat:
+          - {get_attr: [NeutronMl2Base, role_data, host_prep_tasks]}
+          - - name: Check if Nuage is installed or not
+              shell: rpm -qa | grep -q nuage
+              failed_when: false
+              register: nuage_check
+            - name : Installing Nuage Packages and Dependencies
+              block:
+              - name: Installing Dependencies for Nuage Packages
+                yum:
+                  name: "{{ packages }}"
+                  state: present
+                vars:
+                  packages:
+                    - perl-JSON
+              - name: Remove Upstream openvswitch
+                yum:
+                  name: openvswitch
+                  state: absent
+              - name: Installing Dependencies for Nuage Packages
+                yum:
+                  name: "{{ packages }}"
+                  state: present
+                vars:
+                  packages:
+                    - nuage-openstack-neutronclient
+                    - selinux-policy-nuage
+                    - nuage-openvswitch*
+                    - nuage-metadata-agent*
+              when: nuage_check.rc == 1
+

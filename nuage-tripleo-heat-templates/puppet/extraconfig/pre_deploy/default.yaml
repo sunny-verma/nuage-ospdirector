@@ -1,0 +1,60 @@
+heat_template_version: queens
+description: 'Noop Extra Pre-Deployment Config'
+parameters:
+  RepoBaseURL:
+    type: string
+    default: ''
+    description: Base URL for the repos
+
+  RepoOVSURL:
+    type: string
+    default: ''
+    description: A/O/VRS URL for the repos
+  GPGKeys: 
+    type: string
+    default: ''
+    description: GPGKeys URL comma seperated. 
+
+resources:
+  NodeSpecificConfig:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      inputs:
+      - name: baseurl
+      - name: ovsurl
+      - name: gpgkey
+      config: |
+        #!/bin/sh
+        #  Enable all the repos
+        #  Base Repo
+        cat <<EOT > create_repo
+        touch /etc/yum.repos.d/nuage.repo \n
+        echo "[BaseNuageRepo]" >> /etc/yum.repos.d/nuage.repo \n
+        echo "name=baserepo" >> /etc/yum.repos.d/nuage.repo \n
+        echo "baseurl=$baseurl" >> /etc/yum.repos.d/nuage.repo \n
+        echo "enabled = 1" >> /etc/yum.repos.d/nuage.repo \n
+        echo "gpgcheck = 1" >> /etc/yum.repos.d/nuage.repo \n
+        echo "gpgkey = $gpgkey" >> /etc/yum.repos.d/nuage.repo \n
+        echo "[Nuage]" >> /etc/yum.repos.d/nuage.repo \n
+        echo "name=nuage" >> /etc/yum.repos.d/nuage.repo \n
+        echo "baseurl=$ovsurl" >> /etc/yum.repos.d/nuage.repo \n
+        echo "enabled = 1" >> /etc/yum.repos.d/nuage.repo \n
+        echo "gpgcheck = 1" >> /etc/yum.repos.d/nuage.repo \n
+        echo "gpgkey = $gpgkey" >> /etc/yum.repos.d/nuage.repo \n
+        EOT
+
+
+  NodeSpecificDeployment:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      name: NodeSpecificDeployment
+      config: {get_resource: NodeSpecificConfig}
+      server: {get_param: server}
+      input_values:
+        baseurl: {get_param: RepoBaseURL}
+        ovsurl: {get_param: RepoOVSURL}
+        gpgkey: {get_param: GPGKeys}
+outputs:
+  deploy_stdout:
+    value: "None"

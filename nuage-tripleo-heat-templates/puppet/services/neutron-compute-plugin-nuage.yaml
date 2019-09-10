@@ -104,3 +104,35 @@ outputs:
             dport: {get_param: NuageMetadataPort}
       step_config: |
         include ::tripleo::profile::base::neutron::agents::nuage
+      host_prep_tasks:
+        - name: Check if Nuage is installed or not
+          shell: rpm -qa | grep -q nuage
+          failed_when: false
+          register: nuage_check
+        - name : Installing Nuage Packages and Dependencies
+          block:
+          - name: Installing Dependencies for Nuage Packages
+            yum:
+              name: "{{ packages }}"
+              state: present
+            vars:
+              packages:
+                - perl-JSON
+                - lldpad
+          - name: Remove Upstream openvswitch
+            yum:
+              name: openvswitch
+              state: absent
+          - name: Installing Dependencies for Nuage Packages
+            yum:
+              name: "{{ packages }}"
+              state: present
+            vars:
+              packages:
+                - selinux-policy-nuage
+                - selinux-policy-nuage-avrs
+                - nuage-openvswitch*
+                - nuage-metadata-agent*
+                - nuage-bgp
+                - nuage-puppet-modules
+          when: nuage_check.rc == 1
