@@ -21,3 +21,4 @@ parameter_defaults:
     # Please note "--mod-opt=fp-vswitch:--search-comp=0" is not need for VA >= 1.9.3
     FastPathDPVI: "0"
     FastPathOffload: "off"
+    NuageAvrsNode: True
