@@ -76,6 +76,24 @@ parameters:
     type: string
     default: ''
 
+  NuageVrsNode:
+    description: This flag is to make sure if the node is VRS or NOT
+    type: boolean 
+    default: true
+
+resources:
+  RoleParametersValue:
+    type: OS::Heat::Value
+    properties:
+      type: json
+      value:
+        map_replace:
+          - map_replace:
+            - VrsNode: NuageVrsNode
+            - values: {get_param: [RoleParameters]}
+          - values:
+              NuageVrsNode: {get_param: NuageVrsNode}
+
 outputs:
   role_data:
     description: Role data for the Neutron Compute Nuage plugin
@@ -109,9 +127,13 @@ outputs:
           shell: rpm -qa | grep -q nuage
           failed_when: false
           register: nuage_check
-        - name : Installing Nuage Packages and Dependencies
+        - name : Installing Packages and Dependencies
           block:
-          - name: Installing Dependencies for Nuage Packages
+          - name: Remove Upstream openvswitch
+            yum:
+              name: openvswitch
+              state: absent
+          - name: Installing Dependencies for Nuage Packages and Nuage Selinux
             yum:
               name: "{{ packages }}"
               state: present
@@ -119,20 +141,21 @@ outputs:
               packages:
                 - perl-JSON
                 - lldpad
-          - name: Remove Upstream openvswitch
-            yum:
-              name: openvswitch
-              state: absent
+                - selinux-policy-nuage
+
+          - name: Set fact for Compute Node 
+            set_fact:
+              nuage_vrs_node: {get_attr: [RoleParametersValue, value, VrsNode]} 
+
           - name: Installing Dependencies for Nuage Packages
             yum:
               name: "{{ packages }}"
               state: present
             vars:
               packages:
-                - selinux-policy-nuage
-                - selinux-policy-nuage-avrs
-                - nuage-openvswitch*
-                - nuage-metadata-agent*
+                - nuage-openvswitch
+                - nuage-metadata-agent
                 - nuage-bgp
-                - nuage-puppet-modules
-          when: nuage_check.rc == 1
+            when:
+              - nuage_vrs_node|bool
+          when: nuage_check.rc == 1 

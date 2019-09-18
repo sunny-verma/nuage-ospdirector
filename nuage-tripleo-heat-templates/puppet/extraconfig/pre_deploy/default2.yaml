@@ -19,7 +19,7 @@ parameters:
     type: string
     default: ''
     description: GPGKeys URL comma seperated. 
-  RepoOVSURL:
+  RepoAVRSURL:
     type: string
     default: ''
     description: A/O/VRS URL for the repos
@@ -34,10 +34,10 @@ resources:
       value:
         map_replace:
           - map_replace:
-            - Repo_OVS_URL: RepoOVSURL
+            - Repo_OVS_URL: RepoAVRSURL 
             - values: {get_param: [RoleParameters]}
           - values:
-              RepoOVSURL:  {get_param: RepoOVSURL}
+              RepoAVRSURL:  {get_param: RepoAVRSURL}
   NodeSpecificConfig:
     type: OS::Heat::SoftwareConfig
     properties:

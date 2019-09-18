@@ -1,5 +1,5 @@
 resource_registry:
-  OS::TripleO::NodeExtraConfig: ../extraconfig/pre_deploy/rhel-registration/rhel-registration.yaml
+  OS::TripleO::NodeExtraConfig: /usr/share/openstack-tripleo-heat-templates/extraconfig/pre_deploy/rhel-registration/rhel-registration.yaml 
 # Note this can be specified either in the call
 # to heat stack-create via an additional -e option
 # or via the global environment on the seed in
@@ -12,18 +12,18 @@ parameter_defaults:
   rhel_reg_force: ""
   rhel_reg_machine_name: ""
   rhel_reg_org: ""
-  rhel_reg_password: ""
-  rhel_reg_pool_id: ""
+  rhel_reg_password: "P3es@pati"
+  rhel_reg_pool_id: "8a85f99c69d235390169ec4166e6491b"
   rhel_reg_release: ""
-  rhel_reg_repos: ""
+  rhel_reg_repos: "rhel-7-server-rpms rhel-7-server-extras-rpms rhel-7-server-rh-common-rpms  rhel-ha-for-rhel-7-server-rpms rhel-7-server-openstack-13-rpms"
   rhel_reg_sat_url: ""
   rhel_reg_server_url: ""
   rhel_reg_service_level: ""
-  rhel_reg_user: ""
+  rhel_reg_user: "sai_ram.peesapati@nokia.com"
   rhel_reg_type: ""
-  rhel_reg_method: ""
-  rhel_reg_sat_repo: "rhel-7-server-satellite-tools-6.2-rpms"
-  rhel_reg_http_proxy_host: ""
-  rhel_reg_http_proxy_port: ""
+  rhel_reg_method: "portal"
+  rhel_reg_http_proxy_host: "proxy.lbs.alcatel-lucent.com"
+  rhel_reg_http_proxy_port: "8000"
   rhel_reg_http_proxy_username: ""
   rhel_reg_http_proxy_password: ""
+  rhel_reg_sat_repo: ""

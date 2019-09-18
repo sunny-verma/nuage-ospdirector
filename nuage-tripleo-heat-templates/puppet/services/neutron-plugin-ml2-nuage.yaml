@@ -127,13 +127,6 @@ outputs:
               register: nuage_check
             - name : Installing Nuage Packages and Dependencies
               block:
-              - name: Installing Dependencies for Nuage Packages
-                yum:
-                  name: "{{ packages }}"
-                  state: present
-                vars:
-                  packages:
-                    - perl-JSON
               - name: Remove Upstream openvswitch
                 yum:
                   name: openvswitch
@@ -144,9 +137,16 @@ outputs:
                   state: present
                 vars:
                   packages:
+                    - perl-JSON
+              - name: Installing Dependencies for Nuage Packages
+                yum:
+                  name: "{{ packages }}"
+                  state: present
+                vars:
+                  packages:
                     - nuage-openstack-neutronclient
                     - selinux-policy-nuage
-                    - nuage-openvswitch*
-                    - nuage-metadata-agent*
+                    - nuage-openvswitch
+                    - nuage-metadata-agent
               when: nuage_check.rc == 1
 

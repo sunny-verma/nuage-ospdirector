@@ -220,9 +220,9 @@ outputs:
           - name: Install 6wind and AVRS packages
             block:
               - name: Ansible check /6wind/ exists example.
-                  stat:
-                    path: /6wind/
-                  register: file_details
+                stat:
+                  path: /6wind/
+                register: sixwind_dir
 
               - name: Install from Local Repos
                 block:
@@ -235,7 +235,7 @@ outputs:
                       enabled: yes
                       gpgcheck: {get_attr: [RoleParametersValue, value, GPG_CHECK]}
                       description: Nuage_6wind
-                when: not files_to_delete.stat.exists
+                when: sixwind_dir.stat.exists
 
               - name: remove upstream openvswitch and dpdk
                 yum:
@@ -254,23 +254,15 @@ outputs:
               - name: Printing kernel_version value
                 debug: var=kernel_version.stdout
 
-              - shell: "echo {{ item }}-{{ kernel_version.stdout }}"
+              - name: install kernel packages
+                yum:
+                  name: "{{ item }}-{{ kernel_version.stdout }}"
+                  state: present
                 with_items:
                   - kernel-devel
                   - kernel
                   - kernel-tools
-                register: kernel_packages
 
-
-              - name: Printing the kernel pacakges which we need to install
-                debug: msg="{item.stdout}}"
-                with_items: "{{ kernel_packages.results }}"
-
-              - name: install kernel packages
-                yum:
-                  name: {{ item.stdout }}
-                  state: present
-                with_items: "{{ kernel_packages.results }}"
 
               - name: install base packages
                 yum:
@@ -289,10 +281,9 @@ outputs:
                 vars:
                   packages:
                     - 6windgate*
-                    - nuage-openvswitch*
-                    - nuage-metadata-agent*
+                    - nuage-openvswitch
+                    - nuage-metadata-agent
                     - virtual-accelerator*
-                    - 6wind-openstack-extensions
 
               - name: cleanup repo
                 block:
@@ -302,7 +293,7 @@ outputs:
                       state: absent
                   - name: remove repodata
                     shell: rm -rf /6wind/repodata
-                when: not files_to_delete.stat.exists
+                when: sixwind_dir.stat.exists
 
             when: sixwind_check.rc == 1
 

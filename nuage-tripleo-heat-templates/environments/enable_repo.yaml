@@ -1,19 +1,12 @@
 resource_registry:
   OS::TripleO::ControllerExtraConfigPre: ../puppet/extraconfig/pre_deploy/default.yaml
   OS::TripleO::ComputeExtraConfigPre: ../puppet/extraconfig/pre_deploy/default.yaml
-  OS::TripleO::ComputeAvrsExtraConfigPre: ../puppet/extraconfig/pre_deploy/default.yaml
+  OS::TripleO::ComputeAvrsExtraConfigPre: ../puppet/extraconfig/pre_deploy/default2.yaml
 
 parameter_defaults:
   # Base
   RepoBaseURL: http://172.22.61.22/sai/5.4/R1.U5/base/ 
-  GPGKeys:  http://172.22.61.22/sai/5.4/R1.U5/
-
-  ComputeParameters:
-    RepoOVSURL: http://172.22.61.22/sai/5.4/R1.U5/vrs/
-
-  ControllerParameters:
-    RepoOVSURL: http://172.22.61.22/sai/5.4/R1.U5/vrs/
-
-  ComputeAvrsParameters:
-    RepoOVSURL: http://172.22.61.22/sai/5.4/R1.U5/avrs/
+  GPGKeys: http://172.22.61.22/sai/5.4/R1.U5/RPM-GPG-KEY-Nuage 
+  RepoOVSURL: http://172.22.61.22/sai/5.4/R1.U5/vrs/
+  RepoAVRSURL: http://172.22.61.22/sai/5.4/R1.U5/avrs/
 
