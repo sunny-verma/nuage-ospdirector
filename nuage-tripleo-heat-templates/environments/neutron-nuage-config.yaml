@@ -9,6 +9,7 @@ resource_registry:
 
   # Override the NeutronMl2PluginBase to use Nuage inside Docker container
   OS::TripleO::Docker::NeutronMl2PluginBase: ../puppet/services/neutron-plugin-ml2-nuage.yaml
+  OS::TripleO::Services::NeutronCorePlugin: ../docker/services/neutron-plugin-ml2-nuage.yaml
 
 parameter_defaults:
   NeutronNuageNetPartitionName: 'Nuage_Partition_13'
@@ -21,8 +22,7 @@ parameter_defaults:
   UseForwardedFor: true
   NeutronPluginMl2PuppetTags: 'neutron_plugin_ml2,neutron_plugin_nuage'
   NeutronServicePlugins: 'NuagePortAttributes,NuageAPI,NuageL3'
-  NeutronDBSyncExtraParams: '--config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini --config-file /etc/neutron/plugin
-s/nuage/plugin.ini'
+  NeutronDBSyncExtraParams: '--config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini --config-file /etc/neutron/plugins/nuage/plugin.ini'
   NeutronTypeDrivers: 'vxlan'
   NeutronNetworkType: 'vxlan'
   NeutronMechanismDrivers: "nuage"
@@ -42,3 +42,12 @@ s/nuage/plugin.ini'
     directories: [{'allow_override': ['None'], 'path': '/usr/lib/python2.7/site-packages/nuage_horizon', 'require': 'all granted', 'options': ['FollowSymLinks']}]
     add_listen: True
     aliases: [{'alias': '%{root_url}/static/nuage', 'path': '/usr/lib/python2.7/site-packages/nuage_horizon/static'}, {'alias': '%{root_url}/static', 'path': '/usr/share/openstack-dashboard/static'}]
+  ControllerExtraConfig:     
+    neutron::config::server_config:
+      DEFAULT/ipam_driver:
+        value: nuage_internal
+      DEFAULT/enable_snat_by_default:
+        value: false
+    neutron::config::plugin_nuage_config:
+      RESTPROXY/nuage_pat:
+        value: legacy_disabled
