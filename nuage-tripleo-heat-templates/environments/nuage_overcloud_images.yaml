@@ -1,0 +1,14 @@
+parameter_defaults:
+  DockerHeatApiCfnConfigImage: registry.ra.nuagenetworks.net:5100/nuagenetworks/rhosp13-openstack-heat-api-cfn-5-4-1-u6:13.0-3
+  DockerHeatApiCfnImage: registry.ra.nuagenetworks.net:5100/nuagenetworks/rhosp13-openstack-heat-api-cfn-5-4-1-u6:13.0-3
+  DockerHeatApiConfigImage: registry.ra.nuagenetworks.net:5100/nuagenetworks/rhosp13-openstack-heat-api-5-4-1-u6:13.0-3
+  DockerHeatApiImage: registry.ra.nuagenetworks.net:5100/nuagenetworks/rhosp13-openstack-heat-api-5-4-1-u6:13.0-3
+  DockerHeatConfigImage: registry.ra.nuagenetworks.net:5100/nuagenetworks/rhosp13-openstack-heat-api-5-4-1-u6:13.0-3
+  DockerHeatEngineImage: registry.ra.nuagenetworks.net:5100/nuagenetworks/rhosp13-openstack-heat-engine-5-4-1-u6:13.0-3
+  DockerHorizonConfigImage: registry.ra.nuagenetworks.net:5100/nuagenetworks/rhosp13-openstack-horizon-5-4-1-u6:13.0-3
+  DockerHorizonImage: registry.ra.nuagenetworks.net:5100/nuagenetworks/rhosp13-openstack-horizon-5-4-1-u6:13.0-3
+  DockerInsecureRegistryAddress: ['registry.ra.nuagenetworks.net:5100', '192.168.24.1:8787']
+  DockerNeutronApiImage: registry.ra.nuagenetworks.net:5100/nuagenetworks/rhosp13-openstack-neutron-server-5-4-1-u6:13.0-3
+  DockerNeutronConfigImage: registry.ra.nuagenetworks.net:5100/nuagenetworks/rhosp13-openstack-neutron-server-5-4-1-u6:13.0-3
+  DockerNovaComputeAvrsImage: registry.ra.nuagenetworks.net:5100/nuagenetworks/rhosp13-openstack-nova-compute-5-4-1-u6:13.0-3
+  DockerNovaLibvirtAvrsConfigImage: registry.ra.nuagenetworks.net:5100/nuagenetworks/rhosp13-openstack-nova-compute-5-4-1-u6:13.0-3

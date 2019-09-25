@@ -142,6 +142,7 @@ outputs:
                 - perl-JSON
                 - lldpad
                 - selinux-policy-nuage
+                - nuage-puppet-modules
 
           - name: Set fact for Compute Node 
             set_fact:
