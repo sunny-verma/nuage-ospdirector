@@ -120,15 +120,11 @@ outputs:
       host_prep_tasks:
         # Only install when nuage is not installed already.
         - name: Check if Nuage is installed or not
-          shell: rpm -qa | grep -q nuage
-          failed_when: false
+          shell: rpm -q nuage-openvswitch nuage-openstack-neutronclient selinux-policy-nuage nuage-metadata-agent nuage-puppet-modules
           register: nuage_check
+          failed_when: false
         - name : Installing Nuage Packages and Dependencies
           block:
-          - name: Download the nginx package but do not install it
-            command: "sudo yum -y swap -- install nuage-openvswitch -- remove openvswitch"
-            become: true
-
           - name: Installing Dependencies for Nuage Packages
             yum:
               name: "{{ packages }}"
@@ -136,16 +132,15 @@ outputs:
             vars:
               packages:
                 - perl-JSON
-
-          - name: Installing Dependencies for Nuage Packages
-            yum:
-              name: "{{ packages }}"
-              state: present
-            vars:
-              packages:
                 - nuage-openstack-neutronclient
                 - selinux-policy-nuage
-                - nuage-metadata-agent
                 - nuage-puppet-modules
-          when: nuage_check.rc == 1
+          - name: Swapping nuage-openvswitch with upstream openvswitch
+            command: "yum -y swap -- install nuage-openvswitch -- remove openvswitch"
+          - name: Start Nuage Openvswitch
+            service:
+              name: openvswitch
+              state: started
+              enabled: yes
+          when: nuage_check.rc != 0
 
