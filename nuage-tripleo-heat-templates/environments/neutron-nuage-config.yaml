@@ -11,7 +11,7 @@ resource_registry:
   OS::TripleO::Docker::NeutronMl2PluginBase: ../puppet/services/neutron-plugin-ml2-nuage.yaml
 
 parameter_defaults:
-  NeutronNuageNetPartitionName: 'Nuage_Partition_13_avrs'
+  NeutronNuageNetPartitionName: 'Nuage_Partition_13'
   NeutronNuageVSDIp: '192.168.24.118:8443'
   NeutronNuageVSDUsername: 'csproot'
   NeutronNuageVSDPassword: 'csproot'
