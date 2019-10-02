@@ -161,3 +161,39 @@ outputs:
                 state: absent
             when: nuage_openvswitch_update_file.stat.exists
           when: (step|int == 4)
+      post_update_tasks:
+        - name: set is_bootstrap_node fact
+          set_fact: is_bootstrap_node={{bootstrap_node.stdout|lower == ansible_hostname|lower}}
+        - block:
+          - name: get the updated nuage plugin verison
+            command: docker exec -u root neutron_api sh -c "rpm -qa nuage-openstack-neutron"
+            register: update_version_output
+          - name: get nuage plugin previous version
+            command: cat /tmp/nuage_previous_version
+            register: previous_version_output
+          - block:
+            - name: set nuage_previous_version fact
+              set_fact:
+                nuage_previous_version="{{ previous_version_output.stdout.replace('\\"',':').split("-")[4].split('.')[0:2] | join('.')}}"
+            - name: set nuage_update_version fact
+              set_fact:
+                nuage_update_version="{{ update_version_output.stdout.replace('\\"',':').split("-")[4].split('.')[0:2] | join('.')}}"
+            - name: set neutron_config fact
+              set_fact:
+                neutron_config: "/etc/neutron/neutron.conf"
+            - name: set nuage_plugin fact
+              set_fact:
+                nuage_plugin: "/etc/neutron/plugins/nuage/plugin.ini"
+            - name: Running Nuage upgrade scripts
+              command: docker exec -u root neutron_api sh -c "python /opt/nuage_upgrade/{{ item.1 }} --neutron-conf {{ neutron_config }} --nuage-conf {{ nuage_plugin }}"
+              when: "{{ (item.0 | float > nuage_previous_version | float) and (item.0 | float <= nuage_update_version | float) }}"
+              with_list:
+                [['5.3','nuage_upgrade_to_5.3.py'], ['5.4','nuage_upgrade_to_5_4_1.py'], ['6.0','nuage_upgrade_to_6_0.py']]
+            - name: Restarting neutron server container
+              command: docker restart neutron_api
+            when: previous_version_output != update_version_output
+          when: is_bootstrap_node|bool
+        - name: Remove nuage_previous_version file
+          file:
+            path: /tmp/nuage_previous_version
+            state: absent
