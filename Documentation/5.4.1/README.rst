@@ -527,6 +527,20 @@ This example shows how to create a deployment with one Controller node and two C
 
     .. Note:: We also can set GpgCheck to "no" in environment files if user want to disable GPG Check while installating packages on AVRS Node deployment.
 
+    d. For IsolatedCPU or CPUAffinity to be respected, CPUSET_ENABLE needs to be set to the value 0.
+
+    ::
+
+        CpuSetEnable        =====>    CPUSET_ENABLE
+
+    e. For AVRS, FLOW_EVICTION_THRESHOLD and CONN_OBJ_THRESHOLD is now configurable in `/etc/default/openvswitch`. `CONN_OBJ_THRESHOLD` should be half the value configured for `FLOW_EVICTION_THRESHOLD`. For example, `FLOW_EVICTION_THRESHOLD=300000` and `CONN_OBJ_THRESHOLD=150000`.
+       If `FLOW_EVICTION_THRESHOLD` is configured, the fastpath flow limit also needs to match. This is configured in `/etc/fast-path.env` with for example, `: ${FP_OPTIONS:=--mod-opt=fp-vswitch:--flows=300000}`.
+       Once configured, both openvswitch.service and virtual-accelerator.service will need to be restarted. Optimal performance and scale are seen with 300K flows. Flow scale pass 300K will see degradation in performance.
+
+    ::
+
+        VrsExtraConfigs: {"FLOW_EVICTION_THRESHOLD": 300000, "CONN_OBJ_THRESHOLD": 150000}
+
 
 
 4. **(Optional)** To enable SR-IOV, perform the following instructions:
@@ -1332,16 +1346,18 @@ compute-avrs-environment.yaml for AVRS integration
       # so place your most restrictive filters first to make the filtering process more efficient.
       NovaSchedulerDefaultFilters: "RetryFilter,AvailabilityZoneFilter,RamFilter,ComputeFilter,ComputeCapabilitiesFilter,ImagePropertiesFilter,ServerGroupAntiAffinityFilter,ServerGroupAffinityFilter,PciPassthroughFilter,NUMATopologyFilter,AggregateInstanceExtraSpecsFilter"
       ComputeAvrsParameters:
-        KernelArgs: "hugepages=12831 iommu=pt intel_iommu=on"
-        IsolCpusList: "1-7,9-15"
+        KernelArgs: "hugepages=12831 iommu=pt intel_iommu=on isolcpus=1-7,9-15"
         NovaVcpuPinSet: "2-7,10-15"
         FastPathNics: "0000:06:00.1 0000:06:00.2"
         FastPathMask: "1,9"
-        FastPathNicDescriptors: "--nb-rxd=4096 --nb-txd=4096"
-        FastPathOptions: "--mod-opt=fp-vswitch:--flows=200000 --max-nfct=40000 --mod-opt=fp-vswitch:--search-comp=0"
+        FastPathNicDescriptors: "--nb-rxd=4096 --nb-txd=4096 --soft-queue=default=4096"
+        FastPathOptions: "--mod-opt=fp-vswitch:--flows=300000 --max-nfct=500000"
         FastPathDPVI: "0"
         FastPathOffload: "off"
+        NbMbuf: "+32768"
+        CpuSetEnable: 0
         GpgCheck: "yes"
+        VrsExtraConfigs: {"FLOW_EVICTION_THRESHOLD": 300000, "CONN_OBJ_THRESHOLD": 150000}
       ComputeAvrsExtraConfig:
         nova::config::nova_config:
           DEFAULT/monkey_patch:
@@ -1372,27 +1388,31 @@ compute-avrs-multirole-environment.yaml for AVRS integration
           DEFAULT/monkey_patch_modules:
              value: nova.virt.libvirt.vif:openstack_6wind_extensions.queens.nova.virt.libvirt.vif.decorator
       ComputeAvrsSingleParameters:
-        KernelArgs: "hugepages=12831 iommu=pt intel_iommu=on"
-        IsolCpusList: "1-7"
+        KernelArgs: "hugepages=12831 iommu=pt intel_iommu=on isolcpus=1-7"
+        NovaVcpuPinSet: "2-7"
         FastPathNics: "0000:06:00.1 0000:06:00.2"
         FastPathMask: "1"
-        FastPathNicDescriptors: "--nb-rxd=4096 --nb-txd=4096"
-        FastPathOptions: "--mod-opt=fp-vswitch:--flows=200000 --max-nfct=40000 --mod-opt=fp-vswitch:--search-comp=0"
+        FastPathNicDescriptors: "--nb-rxd=4096 --nb-txd=4096 --soft-queue=default=4096"
+        FastPathOptions: "--mod-opt=fp-vswitch:--flows=300000 --max-nfct=500000"
         FastPathDPVI: "0"
         FastPathOffload: "off"
-        NovaVcpuPinSet: "2-7"
+        NbMbuf: "+32768"
+        CpuSetEnable: 0
         GpgCheck: "yes"
+        VrsExtraConfigs: {"FLOW_EVICTION_THRESHOLD": 300000, "CONN_OBJ_THRESHOLD": 150000}
       ComputeAvrsDualParameters:
-        KernelArgs: "hugepages=12831 iommu=pt intel_iommu=on"
-        IsolCpusList: "1-7,9-15"
+        KernelArgs: "hugepages=12831 iommu=pt intel_iommu=on isolcpus=1-7,9-15"
+        NovaVcpuPinSet: "2-7,10-15"
         FastPathNics: "0000:06:00.1 0000:06:00.2"
         FastPathMask: "1,9"
-        FastPathNicDescriptors: "--nb-rxd=4096 --nb-txd=4096"
-        FastPathOptions: "--mod-opt=fp-vswitch:--flows=200000 --max-nfct=40000 --mod-opt=fp-vswitch:--search-comp=0"
+        FastPathNicDescriptors: "--nb-rxd=4096 --nb-txd=4096 --soft-queue=default=4096"
+        FastPathOptions: "--mod-opt=fp-vswitch:--flows=300000 --max-nfct=500000"
         FastPathDPVI: "0"
         FastPathOffload: "off"
-        NovaVcpuPinSet: "2-7,10-15"
+        NbMbuf: "+32768"
+        CpuSetEnable: 0
         GpgCheck: "yes"
+        VrsExtraConfigs: {"FLOW_EVICTION_THRESHOLD": 300000, "CONN_OBJ_THRESHOLD": 150000}
 
 
 node-info.yaml for Non-HA Deployments
