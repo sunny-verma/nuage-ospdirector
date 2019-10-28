@@ -521,7 +521,7 @@ This example shows how to create a deployment with one Controller node and two C
 
     ::
 
-        KernelArgs: "hugepages=12831 iommu=pt intel_iommu=on isolcpus=1-7"
+        KernelArgs: "default_hugepagesz=1G hugepagesz=1G hugepages=64 iommu=pt intel_iommu=on isolcpus=1-7"
 
     .. Note:: Above kernel arguments are consumed by the another env file which include in deployment command `/usr/share/openstack-tripleo-heat-templates/environments/host-config-and-reboot.yaml`
 
@@ -1346,12 +1346,13 @@ compute-avrs-environment.yaml for AVRS integration
       # so place your most restrictive filters first to make the filtering process more efficient.
       NovaSchedulerDefaultFilters: "RetryFilter,AvailabilityZoneFilter,RamFilter,ComputeFilter,ComputeCapabilitiesFilter,ImagePropertiesFilter,ServerGroupAntiAffinityFilter,ServerGroupAffinityFilter,PciPassthroughFilter,NUMATopologyFilter,AggregateInstanceExtraSpecsFilter"
       ComputeAvrsParameters:
-        KernelArgs: "hugepages=12831 iommu=pt intel_iommu=on isolcpus=1-7,9-15"
+        KernelArgs: "default_hugepagesz=1G hugepagesz=1G hugepages=64 iommu=pt intel_iommu=on isolcpus=1-7"
         NovaVcpuPinSet: "2-7,10-15"
         FastPathNics: "0000:06:00.1 0000:06:00.2"
         FastPathMask: "1,9"
-        FastPathNicDescriptors: "--nb-rxd=4096 --nb-txd=4096 --soft-queue=default=4096"
-        FastPathOptions: "--mod-opt=fp-vswitch:--flows=300000 --max-nfct=500000"
+        FastPathNicDescriptors: "--nb-rxd=4096 --nb-txd=4096  --soft-queue=default=2048"
+        FastPathOptions: "--mod-opt=fp-vswitch:--flows=300000 --max-nfct=500000 --mod-opt=fp-vswitch:--search-comp=0"
+        # Please note "--mod-opt=fp-vswitch:--search-comp=0" is not need for VA >= 1.9.3
         FastPathDPVI: "0"
         FastPathOffload: "off"
         NbMbuf: "+32768"
@@ -1388,12 +1389,13 @@ compute-avrs-multirole-environment.yaml for AVRS integration
           DEFAULT/monkey_patch_modules:
              value: nova.virt.libvirt.vif:openstack_6wind_extensions.queens.nova.virt.libvirt.vif.decorator
       ComputeAvrsSingleParameters:
-        KernelArgs: "hugepages=12831 iommu=pt intel_iommu=on isolcpus=1-7"
+        KernelArgs: "default_hugepagesz=1G hugepagesz=1G hugepages=64 iommu=pt intel_iommu=on isolcpus=1-7"
         NovaVcpuPinSet: "2-7"
         FastPathNics: "0000:06:00.1 0000:06:00.2"
         FastPathMask: "1"
-        FastPathNicDescriptors: "--nb-rxd=4096 --nb-txd=4096 --soft-queue=default=4096"
-        FastPathOptions: "--mod-opt=fp-vswitch:--flows=300000 --max-nfct=500000"
+        FastPathNicDescriptors: "--nb-rxd=4096 --nb-txd=4096  --soft-queue=default=2048"
+        FastPathOptions: "--mod-opt=fp-vswitch:--flows=300000 --max-nfct=500000 --mod-opt=fp-vswitch:--search-comp=0"
+        # Please note "--mod-opt=fp-vswitch:--search-comp=0" is not need for VA >= 1.9.3
         FastPathDPVI: "0"
         FastPathOffload: "off"
         NbMbuf: "+32768"
@@ -1401,12 +1403,13 @@ compute-avrs-multirole-environment.yaml for AVRS integration
         GpgCheck: "yes"
         VrsExtraConfigs: {"FLOW_EVICTION_THRESHOLD": 300000, "CONN_OBJ_THRESHOLD": 150000}
       ComputeAvrsDualParameters:
-        KernelArgs: "hugepages=12831 iommu=pt intel_iommu=on isolcpus=1-7,9-15"
+        KernelArgs: "default_hugepagesz=1G hugepagesz=1G hugepages=64 iommu=pt intel_iommu=on isolcpus=1-7"
         NovaVcpuPinSet: "2-7,10-15"
         FastPathNics: "0000:06:00.1 0000:06:00.2"
         FastPathMask: "1,9"
-        FastPathNicDescriptors: "--nb-rxd=4096 --nb-txd=4096 --soft-queue=default=4096"
-        FastPathOptions: "--mod-opt=fp-vswitch:--flows=300000 --max-nfct=500000"
+        FastPathNicDescriptors: "--nb-rxd=4096 --nb-txd=4096  --soft-queue=default=2048"
+        FastPathOptions: "--mod-opt=fp-vswitch:--flows=300000 --max-nfct=500000 --mod-opt=fp-vswitch:--search-comp=0"
+        # Please note "--mod-opt=fp-vswitch:--search-comp=0" is not need for VA >= 1.9.3
         FastPathDPVI: "0"
         FastPathOffload: "off"
         NbMbuf: "+32768"
