@@ -12,6 +12,13 @@ ImageName: "overcloud-full.qcow2"
 DeploymentType: ["vrs"]
 
 
+# Nuage Major Version
+# type: string
+# required  (Please choose one of them)
+# "5.0" --> For Nuage 5.0 Deployments
+# "6.0" --> For Nuage 5.0 Deployments
+NuageMajorVersion: "6.0"
+
 # User name for RHEL Subscription
 # type: string
 # optional
