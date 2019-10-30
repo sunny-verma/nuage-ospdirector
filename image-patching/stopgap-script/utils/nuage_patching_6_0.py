@@ -6,7 +6,7 @@ from utils import *
 import yaml
 from  constants import *
 
-logger = utils.logger
+logger = logging.getLogger(LOG_FILE_NAME) 
 
 '''
 This script is used to patch an existing OpenStack
@@ -99,7 +99,6 @@ yum install --setopt=skip_missing_names_on_install=False --downloadonly --downlo
 yum install --setopt=skip_missing_names_on_install=False --downloadonly --downloaddir=/6wind 6wind-openstack-extensions
 rm -rf /kernel-version
 yum clean all
-%s
 '''
     write_to_file(SCRIPT_NAME, cmds)
 
@@ -148,12 +147,6 @@ def check_config(nuage_config):
 
 def image_patching(nuage_config):
     check_config(nuage_config)
-
-    if nuage_config.get("logFileName"):
-        handler = logging.FileHandler(nuage_config["logFileName"])
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-
     start_script()
 
     if nuage_config.get("RpmPublicKey"):
@@ -178,10 +171,10 @@ def image_patching(nuage_config):
     copy_repo_file(nuage_config["ImageName"], nuage_config["RepoFile"])
 
     if nuage_config['KernelHF']:
-        update_kernel(nuage_config["KernelRepoNames"])
+        update_kernel()
 
     if "ovrs" in nuage_config["DeploymentType"]:
-        install_mellanox(nuage_config["MellanoxRepoNames"])
+        install_mellanox()
 
     if "avrs" in nuage_config["DeploymentType"]:
         download_avrs_packages()
@@ -193,12 +186,21 @@ def image_patching(nuage_config):
         rhel_remove_subscription()
 
     logger.info("Running the patching script on Overcloud image")
+    '''
     virt_customize_run(
         ' %s -a %s --memsize %s --selinux-relabel' % (
             SCRIPT_NAME, nuage_config["ImageName"],
             VIRT_CUSTOMIZE_MEMSIZE))
+    '''
     logger.info("Reset the Machine ID")
     cmds_run([VIRT_CUSTOMIZE_ENV + "virt-sysprep --operation machine-id -a %s" % nuage_config["ImageName"]])
     logger.info("Done")
 
+
+def main(nuage_config):
+    image_patching(nuage_config)
+
+
+if __name__ == "__main__":
+    main()
 

@@ -19,18 +19,10 @@ import logging
 import os
 import yaml
 import constants
+from  constants import *
 
-def get_logger():
-    logger = logging.getLogger('')
-    logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    consoleHandler = logging.StreamHandler(sys.stdout)
-    consoleHandler.setFormatter(formatter)
-    logger.addHandler(consoleHandler)
-    return logger, formatter
 
-logger, formatter = get_logger()
+logger = logging.getLogger(constants.LOG_FILE_NAME)
 
 
 #####
