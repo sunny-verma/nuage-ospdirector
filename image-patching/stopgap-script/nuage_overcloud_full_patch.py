@@ -16,13 +16,25 @@
 import argparse
 import sys
 import yaml
-from utils.utils import utils
-import utils.nuage_patching_5_0 as nuage_patching_5_0
-import utils.nuage_patching_6_0 as nuage_patching_6_0
+import logging
+from utils import utils as utils
+from utils import nuage_patching_5_0 as nuage_patching_5_0
+from utils import nuage_patching_6_0 as nuage_patching_6_0
+from utils.constants import *
 
-logger = utils.logger
+
+logger = logging.getLogger(LOG_FILE_NAME)
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+consoleHandler = logging.StreamHandler(sys.stdout)
+consoleHandler.setFormatter(formatter)
+logger.addHandler(consoleHandler)
+
+
 
 def main():
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--nuage-config",
@@ -40,12 +52,16 @@ def main():
                 'Error parsing file {filename}: {exc}. Please fix and try '
                 'again with correct yaml file.'.format(filename=args.nuage_config, exc=exc))
             sys.exit(1)
+    if nuage_config.get("logFileName"):
+        handler = logging.FileHandler(nuage_config["logFileName"])
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
     logger.info("nuage_overcloud_full_patch.py was run with following config options %s " % nuage_config)
     if nuage_config.get("NuageMajorVersion"):
         if nuage_config["NuageMajorVersion"] == "5.0":
-            nuage_patching_5_0.images_patching(nuage_config)
+            nuage_patching_5_0.main(nuage_config)
         elif nuage_config["NuageMajorVersion"] == "6.0":
-            nuage_patching_6_0.images_patching(nuage_config)
+            nuage_patching_6_0.main(nuage_config)
         else:
             logger.error(
                 "Please provide Correct value of NuageMajorVersion"
