@@ -9,3 +9,4 @@ VIRT_CUSTOMIZE_MEMSIZE = "2048"
 VIRT_CUSTOMIZE_ENV = "export LIBGUESTFS_BACKEND=direct;"
 SCRIPT_NAME = 'patching_script.sh'
 GPGKEYS_PATH = '/tmp/'
+LOG_FILE_NAME='nuage_image_patching.log'
