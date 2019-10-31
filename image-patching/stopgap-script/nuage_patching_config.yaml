@@ -9,15 +9,15 @@ ImageName: "overcloud-full.qcow2"
 # Eg:  ["ovrs"] --> OVRS deployment
 #      ["avrs"] --> AVRS + VRS deployment
 #      ["vrs"]  --> VRS deployment
-DeploymentType: ["vrs"]
+DeploymentType: ["ovrs"]
 
 
 # Nuage Major Version
 # type: string
 # required  (Please choose one of them)
 # "5.0" --> For Nuage 5.0 Deployments
-# "6.0" --> For Nuage 5.0 Deployments
-NuageMajorVersion: "6.0"
+# "6.0" --> For Nuage 6.0 Deployments
+NuageMajorVersion: "5.0"
 
 # User name for RHEL Subscription
 # type: string
@@ -46,23 +46,29 @@ RpmPublicKey: []
 # Note: Make sure to place repo file in the same folder as "nuage_overcloud_full_patch.py"
 RepoFile: ''
 
+RhelUserName: 'sunnyverma'
+RhelPassword: 'letmein1234'
+RhelPool: '8a85f99668741c7b01687b9c13424adc'
+RpmPublicKey: ['RPM-GPG-KEY-Nuage']
+RepoFile: 'nuage.repo'
+
 # Name for the repo hosting the Nuage O/VRS RPMs
 # type:  list
 # required
 # Eg:  ["vrs_repo_name1", "vrs_repo_name2"]
-VRSRepoNames: []
+VRSRepoNames: ['nuage_vrs']
 
 # Name for the repo hosting the Nuage AVRS RPMs 
 # type: list
 # optional
 # Eg:  ["avrs_repo_name1", "avrs_repo_name2"]
-AVRSRepoNames: []
+AVRSRepoNames: ['nuage_avrs']
 
 # Name for the repo hosting the Mellanox and os-net-config RPMs
 # type: list
 # optional
 # Eg:  ["mlnx_repo_name1", "mlnx_repo_name2"]
-MellanoxRepoNames: []
+MellanoxRepoNames: ['asd']
 
 # Name for the repo hosting the Kernel RPMs
 # type: list

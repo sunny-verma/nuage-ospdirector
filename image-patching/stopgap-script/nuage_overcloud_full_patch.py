@@ -19,7 +19,7 @@ import sys
 import logging
 import os
 import yaml
-import constants
+import utils.constants
 from utils.constants import *
 from utils.common import *
 
@@ -133,7 +133,7 @@ yum install --setopt=skip_missing_names_on_install=False -y %s
 
 @repos_decorator
 def download_avrs_packages():
-    nuage_avrs_pkg = NUAGE_AVRS_PACKAGE
+    nuage_avrs_pkg = constants.NUAGE_AVRS_PACKAGE
 
     cmds = '''
 #### Downloading Nuage Avrs and 6wind Packages
@@ -231,6 +231,9 @@ def check_config_5_0(nuage_config):
             sys.exit(1)
     elif "avrs" in nuage_config["DeploymentType"]:
         logger.info("Overcloud Image will be patched with Nuage VRS & AVRS rpms")
+        if not nuage_config.get("VRSRepoNames"):
+            logger.error("Please provide VRSRepoNames for AVRS deployment")
+            sys.exit(1)
         if not nuage_config.get("AVRSRepoNames"):
             logger.error("Please provide AVRSRepoNames for AVRS deployment")
             sys.exit(1)
@@ -267,7 +270,7 @@ def check_config_6_0(nuage_config):
         sys.exit(1)
 
 def check_config(nuage_config):
-
+    import pdb; pdb.set_trace()
     logger.info("Verifying pre-requisite packages for script")
     libguestfs = cmds_run(['rpm -q libguestfs-tools-c'])
     if 'not installed' in libguestfs:
