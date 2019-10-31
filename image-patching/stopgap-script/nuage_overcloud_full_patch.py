@@ -153,68 +153,6 @@ yum clean all
     return cmds
 
 
-####
-# Image Patching
-####
-
-
-def image_patching(nuage_config):
-
-    start_script()
-
-    if nuage_config.get("RpmPublicKey"):
-        logger.info("Importing gpgkey(s) to overcloud image")
-        importing_gpgkeys(nuage_config["ImageName"],
-                          nuage_config["RpmPublicKey"])
-
-
-    if nuage_config.get("RhelUserName") and nuage_config.get(
-            "RhelPassword") and nuage_config.get("RhelPool"):
-        if nuage_config.get("ProxyHostname") and nuage_config.get("ProxyPort"):
-            rhel_subscription(
-                nuage_config["RhelUserName"], nuage_config["RhelPassword"],
-                nuage_config["RhelPool"], nuage_config["ProxyHostname"],
-                nuage_config["ProxyPort"])
-        else:
-            rhel_subscription(
-                nuage_config["RhelUserName"], nuage_config["RhelPassword"],
-                nuage_config["RhelPool"])
-    install_nuage_ovs_packages()
-    uninstall_packages()
-
-    logger.info("Copying RepoFile to the overcloud image")
-    copy_repo_file(nuage_config["ImageName"], nuage_config["RepoFile"])
-
-    if nuage_config['KernelHF']:
-        update_kernel(nuage_config["NuageMajorVersion"], nuage_config[
-            "KernelRepoNames"])
-
-    if "ovrs" in nuage_config["DeploymentType"]:
-        install_mellanox(nuage_config["NuageMajorVersion"],
-                         nuage_config["MellanoxRepoNames"])
-
-    if "avrs" in nuage_config["DeploymentType"]:
-        download_avrs_packages(nuage_config["NuageMajorVersion"],
-                               nuage_config["AVRSRepoNames"])
-
-    install_nuage_packages(nuage_config["NuageMajorVersion"],
-                           nuage_config["VRSRepoNames"])
-
-    if nuage_config.get("RhelUserName") and nuage_config.get(
-            "RhelPassword") and nuage_config.get("RhelPool"):
-        rhel_remove_subscription()
-
-    logger.info("Running the patching script on Overcloud image")
-    '''
-    virt_customize_run(
-        ' %s -a %s --memsize %s --selinux-relabel' % (
-            SCRIPT_NAME, nuage_config["ImageName"],
-            VIRT_CUSTOMIZE_MEMSIZE))
-    '''
-    logger.info("Reset the Machine ID")
-    # cmds_run([VIRT_CUSTOMIZE_ENV + "virt-sysprep --operation machine-id -a %s" % nuage_config["ImageName"]])
-    logger.info("Done")
-
 def check_config_5_0(nuage_config):
     msg = "DeploymentType config option %s is not correct or supported " \
           " Please enter:\n ['vrs'] --> for VRS deployment\n " \
@@ -270,7 +208,6 @@ def check_config_6_0(nuage_config):
         sys.exit(1)
 
 def check_config(nuage_config):
-    import pdb; pdb.set_trace()
     logger.info("Verifying pre-requisite packages for script")
     libguestfs = cmds_run(['rpm -q libguestfs-tools-c'])
     if 'not installed' in libguestfs:
@@ -296,6 +233,69 @@ def check_config(nuage_config):
         constants.NUAGE_AVRS_PACKAGE = "nuage-openvswitch"
     else:
         check_config_6_0(nuage_config)
+
+####
+# Image Patching
+####
+
+
+def image_patching(nuage_config):
+
+    start_script()
+
+    if nuage_config.get("RpmPublicKey"):
+        logger.info("Importing gpgkey(s) to overcloud image")
+        importing_gpgkeys(nuage_config["ImageName"],
+                          nuage_config["RpmPublicKey"])
+
+
+    if nuage_config.get("RhelUserName") and nuage_config.get(
+            "RhelPassword") and nuage_config.get("RhelPool"):
+        if nuage_config.get("ProxyHostname") and nuage_config.get("ProxyPort"):
+            rhel_subscription(
+                nuage_config["RhelUserName"], nuage_config["RhelPassword"],
+                nuage_config["RhelPool"], nuage_config["ProxyHostname"],
+                nuage_config["ProxyPort"])
+        else:
+            rhel_subscription(
+                nuage_config["RhelUserName"], nuage_config["RhelPassword"],
+                nuage_config["RhelPool"])
+    install_nuage_ovs_packages()
+    uninstall_packages()
+
+    logger.info("Copying RepoFile to the overcloud image")
+    copy_repo_file(nuage_config["ImageName"], nuage_config["RepoFile"])
+
+    if nuage_config['KernelHF']:
+        update_kernel(nuage_config["NuageMajorVersion"], nuage_config[
+            "KernelRepoNames"])
+
+    if "ovrs" in nuage_config["DeploymentType"]:
+        install_mellanox(nuage_config["NuageMajorVersion"],
+                         nuage_config["MellanoxRepoNames"])
+
+    if "avrs" in nuage_config["DeploymentType"]:
+        download_avrs_packages(nuage_config["NuageMajorVersion"],
+                               nuage_config["AVRSRepoNames"])
+
+    install_nuage_packages(nuage_config["NuageMajorVersion"],
+                           nuage_config["VRSRepoNames"])
+
+    if nuage_config.get("RhelUserName") and nuage_config.get(
+            "RhelPassword") and nuage_config.get("RhelPool"):
+        rhel_remove_subscription()
+
+    logger.info("Running the patching script on Overcloud image")
+
+    virt_customize_run(
+        ' %s -a %s --memsize %s --selinux-relabel' % (
+            SCRIPT_NAME, nuage_config["ImageName"],
+            VIRT_CUSTOMIZE_MEMSIZE))
+
+    logger.info("Reset the Machine ID")
+    cmds_run([VIRT_CUSTOMIZE_ENV + "virt-sysprep --operation machine-id -a %s" % nuage_config["ImageName"]])
+    logger.info("Done")
+
 
 def main():
     parser = argparse.ArgumentParser()
