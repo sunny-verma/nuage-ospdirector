@@ -81,9 +81,18 @@ parameters:
     type: json
     tags:
       - role_specific
+  NuageAvrsNode:
+    description: This flag is to make sure if the node is VRS or NOT
+    type: boolean 
+    default: false
+    tags:
+      - role_specific
+  NuageGpgKeys:
+    type: comma_delimited_list
+    default: []
+    description: Nuage GPG keys
 
 resources:
-
   RoleParametersValue:
     type: OS::Heat::Value
     properties:
@@ -92,9 +101,11 @@ resources:
         map_replace:
           - map_replace:
             - nuage::vrs::vrs_extra_configs: VrsExtraConfigs
+            - AvrsNode: NuageAvrsNode
             - values: {get_param: [RoleParameters]}
           - values:
               VrsExtraConfigs: {get_param: VrsExtraConfigs}
+              NuageAvrsNode: {get_param: NuageAvrsNode}
 
 outputs:
   role_data:
@@ -126,3 +137,56 @@ outputs:
                 dport: {get_param: NuageMetadataPort}
       step_config: |
         include ::tripleo::profile::base::neutron::agents::nuage
+      host_prep_tasks:
+        - name: Check if Nuage is installed or not
+          shell: rpm -q selinux-policy-nuage nuage-puppet-modules nuage-openvswitch nuage-metadata-agent nuage-bgp
+          failed_when: false
+          register: nuage_check
+        - name : Installing Nuage pkgs
+          block:
+          - name: set nuage_gpg_keys fact
+            set_fact:
+              nuage_gpg_keys: {get_param: NuageGpgKeys }
+          - name: Adding nuage_gpg_keys on overcloud node
+            rpm_key:
+              state: present
+              key: "{{ item }}"
+            with_items:
+              - "{{ nuage_gpg_keys }}"
+            when:
+              - nuage_gpg_keys != []
+          - debug:
+              msg: "No NuageGpgKeys Environment variable is set for this deployment"
+            when:
+              - nuage_gpg_keys == []
+          - name: Remove Upstream openvswitch
+            yum:
+              name: openvswitch
+              state: absent
+          - name: Installing nuage packages dependencies and base packages
+            yum:
+              name: "{{ packages }}"
+              state: present
+            vars:
+              packages:
+                - perl-JSON
+                - lldpad
+                - selinux-policy-nuage
+                - nuage-puppet-modules
+                - nuage-bgp
+
+          - name: Set fact for Compute Node 
+            set_fact:
+              nuage_avrs_node: {get_attr: [RoleParametersValue, value, AvrsNode]}
+
+          - name: Installing Nuage VRS Packages
+            yum:
+              name: "{{ packages }}"
+              state: present
+            vars:
+              packages:
+                - nuage-openvswitch
+                - nuage-metadata-agent
+            when:
+              - not nuage_avrs_node|bool
+          when: nuage_check.rc != 0 

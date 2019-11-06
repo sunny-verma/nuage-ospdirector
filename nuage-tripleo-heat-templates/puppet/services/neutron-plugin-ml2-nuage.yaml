@@ -82,6 +82,12 @@ parameters:
     type: boolean
     default: false
 
+  NuageGpgKeys:
+    type: comma_delimited_list
+    default: []
+    description: Nuage GPG keys
+
+
 resources:
 
   NeutronMl2Base:
@@ -117,3 +123,63 @@ outputs:
         include tripleo::profile::base::neutron::plugins::ml2
       metadata_settings:
         get_attr: [NeutronMl2Base, role_data, metadata_settings]
+      host_prep_tasks:
+        - name: Check if Nuage is installed or not
+          shell: rpm -q nuage-openstack-neutronclient selinux-policy-nuage
+          register: nuage_check
+          failed_when: false
+        - name : Installing Nuage Packages and Dependencies
+          block:
+          # Only install when nuage is not installed already.
+          - name: set nuage_gpg_keys fact
+            set_fact:
+              nuage_gpg_keys: {get_param: NuageGpgKeys }
+          - name: Adding nuage_gpg_keys on overcloud node
+            rpm_key:
+              state: present
+              key: "{{ item }}"
+            with_items:
+              - "{{ nuage_gpg_keys }}"
+            when:
+              - nuage_gpg_keys != []
+          - debug:
+              msg: "No NuageGpgKeys Environment variable is set for this deployment"
+            when: 
+              - nuage_gpg_keys == []
+          - name: Install Nuage Neutron Client on overcloud controller node
+            yum:
+              name: "{{ packages }}"
+              state: present
+            vars:
+              packages:
+                - selinux-policy-nuage
+                - nuage-openstack-neutronclient
+          when: nuage_check.rc != 0
+
+
+# Extra code that needs to be removed.
+#        - name: Check if Nuage is installed or not
+#          shell: rpm -q nuage-openvswitch nuage-openstack-neutronclient selinux-policy-nuage nuage-metadata-agent nuage-puppet-modules
+#          register: nuage_check
+#          failed_when: false
+#        - name : Installing Nuage Packages and Dependencies
+#          block:
+#          - name: Installing Dependencies for Nuage Packages
+#            yum:
+#              name: "{{ packages }}"
+#              state: present
+#            vars:
+#              packages:
+#                - perl-JSON
+#                - nuage-openstack-neutronclient
+#                - selinux-policy-nuage
+#                - nuage-puppet-modules
+#          - name: Swapping nuage-openvswitch with upstream openvswitch
+#            command: "yum -y swap -- install nuage-openvswitch -- remove openvswitch"
+#          - name: Start Nuage Openvswitch
+#            service:
+#              name: openvswitch
+#              state: started
+#              enabled: yes
+#          when: nuage_check.rc != 0
+
