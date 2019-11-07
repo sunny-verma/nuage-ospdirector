@@ -69,3 +69,4 @@ outputs:
       docker_config: {}
       host_prep_tasks: {get_attr: [NeutronBase, role_data, host_prep_tasks]}
       update_tasks: {get_attr: [NeutronBase, role_data, update_tasks]}
+      post_update_tasks: {get_attr: [NeutronBase, role_data, post_update_tasks]}
