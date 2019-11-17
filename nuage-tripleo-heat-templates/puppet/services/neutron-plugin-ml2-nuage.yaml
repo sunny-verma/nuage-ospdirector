@@ -119,6 +119,11 @@ outputs:
         get_attr: [NeutronMl2Base, role_data, metadata_settings]
       update_tasks:
         - block:
+          - name: get the nuage_previous_version
+            command: docker exec -u root neutron_api sh -c "rpm -qa nuage-openstack-neutron"
+            register: nuage_previous_version
+          - name: Create the file with nuage_previous version
+            copy: content="{{ nuage_previous_version }}" dest=/tmp/nuage_previous_version
           - name: Is nuage openvswitch going to be updated
             shell: yum check-update nuage-openvswitch
             register: nuage_openvswitch_update_check
@@ -192,7 +197,7 @@ outputs:
             - name: Restarting neutron server container
               command: docker restart neutron_api
             when: previous_version_output != update_version_output
-          when: is_bootstrap_node|bool
+          when: is_bootstrap_node|bool and (step|int == 1)
         - name: Remove nuage_previous_version file
           file:
             path: /tmp/nuage_previous_version
