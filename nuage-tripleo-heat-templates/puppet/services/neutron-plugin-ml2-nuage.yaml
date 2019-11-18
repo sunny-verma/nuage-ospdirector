@@ -158,7 +158,7 @@ outputs:
           - block:
             - name: Restart nuage openvswitch
               service:
-                name: nuage-openvswitch
+                name: openvswitch
                 state: restarted
             - name: Remove nuage_openvswitch file if virtual-accelerator-base is updated
               file:
