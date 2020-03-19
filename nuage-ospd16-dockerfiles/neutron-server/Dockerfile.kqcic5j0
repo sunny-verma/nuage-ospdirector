@@ -1,0 +1,25 @@
+FROM undercloud16.ctlplane.localdomain:8787/rhosp-rhel8/openstack-neutron-server-ovn:16.0
+LABEL modified_append_tag=-nuage
+MAINTAINER Nuage OpenStack Engineering opensource@nuagenetworks.net
+
+
+LABEL name="undercloud16.ctlplane.localdomain:8787/rhosp-rhel8/openstack-neutron-server"
+LABEL version="16.0-nuage"
+LABEL release=latest
+
+USER root
+
+COPY RPM-GPG-KEY-Nuage /tmp/RPM-GPG-KEY-Nuage
+COPY nuage.repo /etc/yum.repos.d/nuage.repo
+COPY redhat.repo /etc/yum.repos.d/redhat.repo
+RUN yum install nuage-openstack-neutron nuage-openstack-neutronclient -y && yum clean all
+
+
+RUN mkdir -p /opt/nuage_upgrade
+WORKDIR /opt/nuage_upgrade
+#ADD http://172.22.61.22/6.0.5/train/nuage-openstack-upgrade-6.0.5-174.tar.gz .
+COPY nuage-openstack-upgrade-6.0.5-174.tar.gz .
+RUN tar -xzf nuage-openstack-upgrade-6.0.5-174.tar.gz
+WORKDIR /
+
+USER neutron

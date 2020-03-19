@@ -1,0 +1,286 @@
+heat_template_version: rocky
+
+description: >
+  OpenStack containerized Manila API service
+
+parameters:
+  ContainerManilaApiImage:
+    description: image
+    type: string
+  ContainerManilaConfigImage:
+    description: The container image to use for the manila config_volume
+    type: string
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  EnableInternalTLS:
+    type: boolean
+    default: false
+  ManilaWorkers:
+    type: string
+    description: Set the number of workers for manila::wsgi::apache
+    default: '%{::os_workers}'
+  ManilaPassword:
+    description: The password for the manila service account.
+    type: string
+    hidden: true
+  KeystoneRegion:
+    type: string
+    default: 'regionOne'
+    description: Keystone region for endpoint
+  MonitoringSubscriptionManilaApi:
+    default: 'overcloud-manila-api'
+    type: string
+
+conditions:
+
+  internal_tls_enabled: {equals: [{get_param: EnableInternalTLS}, true]}
+  manila_workers_zero: {equals : [{get_param: ManilaWorkers}, 0]}
+
+resources:
+
+  ContainersCommon:
+    type: ../containers-common.yaml
+
+  MySQLClient:
+    type: ../../deployment/database/mysql-client.yaml
+
+  ManilaBase:
+    type: ./manila-base.yaml
+    properties:
+      EndpointMap: {get_param: EndpointMap}
+      ServiceData: {get_param: ServiceData}
+      ServiceNetMap: {get_param: ServiceNetMap}
+      DefaultPasswords: {get_param: DefaultPasswords}
+      RoleName: {get_param: RoleName}
+      RoleParameters: {get_param: RoleParameters}
+
+  ApacheServiceBase:
+    type: ../../deployment/apache/apache-baremetal-puppet.yaml
+    properties:
+      ServiceData: {get_param: ServiceData}
+      ServiceNetMap: {get_param: ServiceNetMap}
+      DefaultPasswords: {get_param: DefaultPasswords}
+      EndpointMap: {get_param: EndpointMap}
+      RoleName: {get_param: RoleName}
+      RoleParameters: {get_param: RoleParameters}
+      EnableInternalTLS: {get_param: EnableInternalTLS}
+
+outputs:
+  role_data:
+    description: Role data for the Manila API role.
+    value:
+      service_name: manila_api
+      monitoring_subscription: {get_param: MonitoringSubscriptionManilaApi}
+      config_settings:
+        map_merge:
+          - get_attr: [ManilaBase, role_data, config_settings]
+          - get_attr: [ApacheServiceBase, role_data, config_settings]
+          - manila::keystone::authtoken::password: {get_param: ManilaPassword}
+            manila::keystone::authtoken::www_authenticate_uri: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix]}
+            manila::keystone::authtoken::auth_url: { get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
+            manila::keystone::authtoken::project_name: 'service'
+            manila::keystone::authtoken::user_domain_name: 'Default'
+            manila::keystone::authtoken::project_domain_name: 'Default'
+            tripleo::manila_api::firewall_rules:
+              '150 manila':
+                dport:
+                  - 8786
+                  - 13786
+            # NOTE: bind IP is found in hiera replacing the network name with the
+            # local node IP for the given network; replacement examples
+            # (eg. for internal_api):
+            # internal_api -> IP
+            # internal_api_uri -> [IP]
+            # internal_api_subnet - > IP/CIDR
+            manila::api::bind_host:
+              str_replace:
+                template:
+                  "%{hiera('$NETWORK')}"
+                params:
+                  $NETWORK: {get_param: [ServiceNetMap, ManilaApiNetwork]}
+            manila::wsgi::apache::bind_host:
+              str_replace:
+                template:
+                  "%{hiera('$NETWORK')}"
+                params:
+                  $NETWORK: {get_param: [ServiceNetMap, ManilaApiNetwork]}
+            manila::wsgi::apache::ssl: {get_param: EnableInternalTLS}
+            manila::api::service_name: 'httpd'
+            manila::api::enable_proxy_headers_parsing: true
+            manila::api::default_share_type: 'default'
+          - manila::wsgi::apache::servername:
+              str_replace:
+                template:
+                  "%{hiera('fqdn_$NETWORK')}"
+                params:
+                  $NETWORK: {get_param: [ServiceNetMap, ManilaApiNetwork]}
+          - if:
+              - manila_workers_zero
+              - {}
+              - manila::wsgi::apache::workers: {get_param: ManilaWorkers}
+      service_config_settings:
+        map_merge:
+          - get_attr: [ManilaBase, role_data, service_config_settings]
+          - keystone:
+              manila::keystone::auth::tenant: 'service'
+              manila::keystone::auth::public_url: {get_param: [EndpointMap, ManilaV1Public, uri]}
+              manila::keystone::auth::internal_url: {get_param: [EndpointMap, ManilaV1Internal, uri]}
+              manila::keystone::auth::admin_url: {get_param: [EndpointMap, ManilaV1Admin, uri]}
+              manila::keystone::auth::public_url_v2: {get_param: [EndpointMap, ManilaPublic, uri]}
+              manila::keystone::auth::internal_url_v2: {get_param: [EndpointMap, ManilaInternal, uri]}
+              manila::keystone::auth::admin_url_v2: {get_param: [EndpointMap, ManilaAdmin, uri]}
+              manila::keystone::auth::password: {get_param: ManilaPassword}
+              manila::keystone::auth::region: {get_param: KeystoneRegion}
+      # BEGIN DOCKER SETTINGS #
+      puppet_config:
+        config_volume: manila
+        puppet_tags: manila_config,manila_api_paste_ini
+        step_config:
+          list_join:
+            - "\n"
+            - - "include ::tripleo::profile::base::manila::api"
+              - {get_attr: [MySQLClient, role_data, step_config]}
+        config_image: {get_param: ContainerManilaConfigImage}
+      kolla_config:
+        /var/lib/kolla/config_files/manila_api.json:
+          command: /usr/sbin/httpd -DFOREGROUND
+          config_files:
+            - source: "/var/lib/kolla/config_files/src/etc/httpd/conf.d"
+              dest: "/etc/httpd/conf.d"
+              merge: false
+              preserve_properties: true
+            - source: "/var/lib/kolla/config_files/src/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+          permissions:
+            - path: /var/log/manila
+              owner: manila:manila
+              recurse: true
+      docker_config:
+        step_2:
+          manila_init_logs:
+            image: &manila_api_image {get_param: ContainerManilaApiImage}
+            net: none
+            user: root
+            volumes:
+              - /var/log/containers/manila:/var/log/manila:z
+              - /var/log/containers/httpd/manila-api:/var/log/httpd:z
+            command: ['/bin/bash', '-c', 'chown -R manila:manila /var/log/manila']
+        step_3:
+          manila_api_db_sync:
+            user: root
+            image: *manila_api_image
+            net: host
+            detach: false
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/config-data/manila/etc/my.cnf.d/tripleo.cnf:/etc/my.cnf.d/tripleo.cnf:ro
+                  - /var/lib/config-data/manila/etc/manila/:/etc/manila/:ro
+                  - /var/log/containers/manila:/var/log/manila:z
+                  - /var/log/containers/httpd/manila-api:/var/log/httpd:z
+            command: "/usr/bin/bootstrap_host_exec manila_api su manila -s /bin/bash -c '/usr/bin/manila-manage db sync'"
+        step_4:
+          manila_api:
+            image: *manila_api_image
+            net: host
+            restart: always
+            # NOTE(gouthamr) kolla image changes the user to 'manila', we
+            # need it to be root to run httpd
+            user: root
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/kolla/config_files/manila_api.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/manila/:/var/lib/kolla/config_files/src:ro
+                  - /var/log/containers/manila:/var/log/manila:z
+                  - /var/log/containers/httpd/manila-api:/var/log/httpd:z
+                  - if:
+                      - internal_tls_enabled
+                      - /etc/pki/tls/certs/httpd:/etc/pki/tls/certs/httpd:ro
+                      - ''
+                  - if:
+                      - internal_tls_enabled
+                      - /etc/pki/tls/private/httpd:/etc/pki/tls/private/httpd:ro
+                      - ''
+            environment:
+              KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+      metadata_settings:
+        get_attr: [ApacheServiceBase, role_data, metadata_settings]
+      host_prep_tasks:
+        - name: Create persistent directories
+          file:
+            path: "{{ item.path }}"
+            state: directory
+            setype: "{{ item.setype }}"
+          with_items:
+            - { 'path': /var/log/containers/manila, 'setype': svirt_sandbox_file_t }
+            - { 'path': /var/log/containers/httpd/manila-api, 'setype': svirt_sandbox_file_t }
+            - { 'path': /var/log/manila, 'setype': svirt_sandbox_file_t }
+        - name: manila logs readme
+          copy:
+            dest: /var/log/manila/readme.txt
+            content: |
+              Log files from manila containers can be found under
+              /var/log/containers/manila and /var/log/containers/httpd/manila-api.
+          ignore_errors: true
+      upgrade_tasks: []
+      fast_forward_upgrade_tasks:
+        - name: Check if manila_api is deployed
+          command: systemctl is-enabled --quiet openstack-manila-api
+          ignore_errors: True
+          register: manila_api_enabled_result
+          when:
+            - step|int == 0
+            - release == 'rocky'
+        - name: Set fact manila_api_enabled
+          set_fact:
+            manila_api_enabled: "{{ manila_api_enabled_result.rc == 0 }}"
+          when:
+            - step|int == 0
+            - release == 'rocky'
+        - name: Stop openstack-manila-api
+          service: name=openstack-manila-api state=stopped
+          when:
+            - step|int == 1
+            - release == 'rocky'
+            - manila_api_enabled|bool
+        - name: manila package update
+          package:
+            name: 'openstack-manila*'
+            state: latest
+          when:
+            - step|int == 6
+            - is_bootstrap_node|bool
+        - name: Manila db sync
+          command: manila-manage db sync
+          when:
+            - step|int == 8
+            - is_bootstrap_node|bool

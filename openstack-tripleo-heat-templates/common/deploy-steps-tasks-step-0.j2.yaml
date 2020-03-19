@@ -1,0 +1,31 @@
+- name: Deploy step tasks for step 0
+  delegate_to: localhost
+  run_once: true
+  debug:
+    msg: Use --start-at-task 'Deploy step tasks for step 0' to resume from this task
+  when: "tripleo_minor_update is not defined or tripleo_minor_update != 'true'"
+- name: Ensure /var/log/journal exists
+  file: path=/var/log/journal state=directory mode=0750 owner=root group=root setype=var_log_t
+- name: Create /var/lib/container-puppet
+  no_log: True
+  file: path=/var/lib/container-puppet state=directory setype=container_file_t selevel=s0 recurse=true
+- name: Write container-puppet.py
+  no_log: True
+  copy: src=docker_puppet_script.yaml dest=/var/lib/container-puppet/container-puppet.py force=yes mode=0600
+- name: Write container-puppet.sh
+  no_log: True
+  copy: src=container_puppet_script.yaml dest=/var/lib/container-puppet/container-puppet.sh force=yes mode=0755 setype=container_file_t
+
+{%- for role in roles %}
+- name: Check for {{role.name}}/deploy_steps_tasks_step0.yaml
+  delegate_to: localhost
+  run_once: true
+  become: false
+  stat:
+    path: "{{ '{{' }} playbook_dir ~ '/' ~ '{{role.name}}' ~ '/' ~ 'deploy_steps_tasks_step0.yaml' {{ '}}' }}"
+  register: tasks_stat
+- include_tasks: {{role.name}}/deploy_steps_tasks_step0.yaml
+  when:
+    - tripleo_role_name == '{{role.name}}'
+    - tasks_stat.stat.exists
+{%- endfor %}

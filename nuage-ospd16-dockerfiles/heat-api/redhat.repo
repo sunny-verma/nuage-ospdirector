@@ -1,0 +1,1466 @@
+#
+# Certificate-Based Repositories
+# Managed by (rhsm) subscription-manager
+#
+# *** This file is auto-generated.  Changes made here will be over-written. ***
+# *** Use "subscription-manager repo-override --help" if you wish to make changes. ***
+#
+# If this file is empty and this system is subscribed consider
+# a "yum repolist" to refresh available repos
+#
+
+[rhel-8-for-x86_64-nfv-source-rpms]
+name = Red Hat Enterprise Linux 8 for x86_64 - Real Time for NFV (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/rhel8/$releasever/x86_64/nfv/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhel-8-for-x86_64-highavailability-source-rpms]
+name = Red Hat Enterprise Linux 8 for x86_64 - High Availability (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/rhel8/$releasever/x86_64/highavailability/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[satellite-tools-6.5-for-rhel-8-x86_64-rpms]
+name = Red Hat Satellite Tools 6.5 for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/sat-tools/6.5/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[cfme-5.11-beta-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat CloudForms Management Engine 5.11 Beta for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/cfme/5.11/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-beta-for-rhel-8-x86_64-rpms]
+name = Red Hat OpenStack Platform Beta for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/openstack/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release,file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-beta
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[cfme-5.11-beta-for-rhel-8-x86_64-rpms]
+name = Red Hat CloudForms Management Engine 5.11 Beta for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/cfme/5.11/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhel-8-for-x86_64-supplementary-debug-rpms]
+name = Red Hat Enterprise Linux 8 for x86_64 - Supplementary (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/rhel8/$releasever/x86_64/supplementary/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-16-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat OpenStack Platform 16 for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/openstack/16/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[advanced-virt-for-rhel-8-x86_64-rpms]
+name = Advanced Virtualization for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/advanced-virt/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[satellite-tools-6.7-for-rhel-8-x86_64-rpms]
+name = Red Hat Satellite Tools 6.7 for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/sat-tools/6.7/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[fast-datapath-beta-for-rhel-8-x86_64-debug-rpms]
+name = Fast Datapath Beta for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/fast-datapath/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-beta,file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-15-devtools-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat OpenStack Platform 15 Developer Tools for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/openstack-devtools/15/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhel-8-for-x86_64-appstream-source-rpms]
+name = Red Hat Enterprise Linux 8 for x86_64 - AppStream (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/rhel8/$releasever/x86_64/appstream/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rh-sso-textonly-1-for-middleware-rpms]
+name = Single Sign-On Text-Only Advisories
+baseurl = https://cdn.redhat.com/content/dist/middleware/rh-sso/1.0/$basearch/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file://
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[satellite-tools-6.6-for-rhel-8-x86_64-rpms]
+name = Red Hat Satellite Tools 6.6 for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/sat-tools/6.6/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[cfme-5.11-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat CloudForms Management Engine for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/cfme/5.11/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[ansible-2.9-for-rhel-8-x86_64-rpms]
+name = Red Hat Ansible Engine 2.9 for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2.9/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[advanced-virt-crb-for-rhel-8-x86_64-rpms]
+name = Advanced Virtualization CodeReady Builder for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/advanced-virt-crb/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[ansible-2-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat Ansible Engine 2 for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[advanced-virt-crb-beta-for-rhel-8-x86_64-rpms]
+name = Advanced Virtualization CodeReady Builder Beta for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/advanced-virt-crb/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[cfme-5.11-for-rhel-8-x86_64-source-rpms]
+name = Red Hat CloudForms Management Engine for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/cfme/5.11/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rh-gluster-3-client-for-rhel-8-x86_64-source-rpms]
+name = Red Hat Storage Native Client for RHEL 8 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/rhgs-client/3.5/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[cfme-5.11-for-rhel-8-x86_64-rpms]
+name = Red Hat CloudForms Management Engine for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/cfme/5.11/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-15-devtools-for-rhel-8-x86_64-source-rpms]
+name = Red Hat OpenStack Platform 15 Developer Tools for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/openstack-devtools/15/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-15-tools-for-rhel-8-x86_64-rpms]
+name = Red Hat OpenStack Platform 15 Tools for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/openstack-tools/15/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[ansible-2.9-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat Ansible Engine 2.9 for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2.9/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-15-devtools-for-rhel-8-x86_64-rpms]
+name = Red Hat OpenStack Platform 15 Developer Tools for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/openstack-devtools/15/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[satellite-tools-6.7-for-rhel-8-x86_64-source-rpms]
+name = Red Hat Satellite Tools 6.7 for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/sat-tools/6.7/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[codeready-builder-for-rhel-8-x86_64-rpms]
+name = Red Hat CodeReady Linux Builder for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/rhel8/$releasever/x86_64/codeready-builder/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[satellite-tools-6-beta-for-rhel-8-x86_64-rpms]
+name = Red Hat Satellite Tools 6 Beta for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/sat-tools/6/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-beta,file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[satellite-tools-6-beta-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat Satellite Tools 6 Beta for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/sat-tools/6/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-beta,file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhceph-4-mon-for-rhel-8-x86_64-source-rpms]
+name = Red Hat Ceph Storage MON 4 for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/rhceph-mon/4/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhel-8-for-x86_64-appstream-rpms]
+name = Red Hat Enterprise Linux 8 for x86_64 - AppStream (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/rhel8/$releasever/x86_64/appstream/os
+enabled = 1
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 1
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[satellite-tools-6-beta-for-rhel-8-x86_64-source-rpms]
+name = Red Hat Satellite Tools 6 Beta for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/sat-tools/6/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-beta,file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-15-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat OpenStack Platform 15 for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/openstack/15/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhel-8-for-x86_64-supplementary-source-rpms]
+name = Red Hat Enterprise Linux 8 for x86_64 - Supplementary (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/rhel8/$releasever/x86_64/supplementary/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[codeready-builder-for-rhel-8-x86_64-source-rpms]
+name = Red Hat CodeReady Linux Builder for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/rhel8/$releasever/x86_64/codeready-builder/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rh-sso-7.3-for-rhel-8-x86_64-rpms]
+name = Single Sign-On 7.3 for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/rh-sso/7.3/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-beta-devtools-for-rhel-8-x86_64-rpms]
+name = Red Hat OpenStack Platform Beta Developer Tools for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/openstack-devtools/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release,file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-beta
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-15-for-rhel-8-x86_64-rpms]
+name = Red Hat OpenStack Platform 15 for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/openstack/15/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[advanced-virt-for-rhel-8-x86_64-debug-rpms]
+name = Advanced Virtualization for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/advanced-virt/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[advanced-virt-beta-for-rhel-8-x86_64-debug-rpms]
+name = Advanced Virtualization Beta for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/advanced-virt/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[satellite-tools-6.6-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat Satellite Tools 6.6 for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/sat-tools/6.6/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[fast-datapath-beta-for-rhel-8-x86_64-rpms]
+name = Fast Datapath Beta for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/fast-datapath/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-beta,file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-15-for-rhel-8-x86_64-source-rpms]
+name = Red Hat OpenStack Platform 15 for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/openstack/15/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[advanced-virt-crb-for-rhel-8-x86_64-source-rpms]
+name = Advanced Virtualization CodeReady Builder for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/advanced-virt-crb/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rh-gluster-3-client-for-rhel-8-x86_64-rpms]
+name = Red Hat Storage Native Client for RHEL 8 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/rhgs-client/3.5/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[ansible-2-for-rhel-8-x86_64-source-rpms]
+name = Red Hat Ansible Engine 2 for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhel-8-for-x86_64-appstream-debug-rpms]
+name = Red Hat Enterprise Linux 8 for x86_64 - AppStream (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/rhel8/$releasever/x86_64/appstream/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhceph-4-mon-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat Ceph Storage MON 4 for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/rhceph-mon/4/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-16-tools-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat OpenStack Platform 16 Tools for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/openstack-tools/16/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rh-sso-7.3-for-rhel-8-x86_64-source-rpms]
+name = Single Sign-On 7.3 for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/rh-sso/7.3/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[satellite-tools-6.5-for-rhel-8-x86_64-source-rpms]
+name = Red Hat Satellite Tools 6.5 for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/sat-tools/6.5/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhceph-4-tools-for-rhel-8-x86_64-source-rpms]
+name = Red Hat Ceph Storage Tools 4 for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/rhceph-tools/4/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhel-8-for-x86_64-baseos-source-rpms]
+name = Red Hat Enterprise Linux 8 for x86_64 - BaseOS (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/rhel8/$releasever/x86_64/baseos/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[advanced-virt-crb-beta-for-rhel-8-x86_64-debug-rpms]
+name = Advanced Virtualization CodeReady Builder Beta for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/advanced-virt-crb/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhceph-4-mon-for-rhel-8-x86_64-rpms]
+name = Red Hat Ceph Storage MON 4 for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/rhceph-mon/4/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[ansible-2.8-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat Ansible Engine 2.8 for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2.8/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-16-for-rhel-8-x86_64-rpms]
+name = Red Hat OpenStack Platform 16 for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/openstack/16/os
+enabled = 1
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 1
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[advanced-virt-crb-beta-for-rhel-8-x86_64-source-rpms]
+name = Advanced Virtualization CodeReady Builder Beta for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/advanced-virt-crb/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-16-devtools-for-rhel-8-x86_64-source-rpms]
+name = Red Hat OpenStack Platform 16 Developer Tools for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/openstack-devtools/16/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-16-tools-for-rhel-8-x86_64-source-rpms]
+name = Red Hat OpenStack Platform 16 Tools for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/openstack-tools/16/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhel-8-for-x86_64-baseos-rpms]
+name = Red Hat Enterprise Linux 8 for x86_64 - BaseOS (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/rhel8/$releasever/x86_64/baseos/os
+enabled = 1
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 1
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-16-tools-for-rhel-8-x86_64-rpms]
+name = Red Hat OpenStack Platform 16 Tools for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/openstack-tools/16/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[satellite-tools-6.6-for-rhel-8-x86_64-source-rpms]
+name = Red Hat Satellite Tools 6.6 for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/sat-tools/6.6/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-beta-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat OpenStack Platform Beta for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/openstack/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release,file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-beta
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-beta-devtools-for-rhel-8-x86_64-source-rpms]
+name = Red Hat OpenStack Platform Beta Developer Tools for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/openstack-devtools/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release,file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-beta
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[ansible-2-for-rhel-8-x86_64-rpms]
+name = Red Hat Ansible Engine 2 for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[fast-datapath-for-rhel-8-x86_64-rpms]
+name = Fast Datapath for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/fast-datapath/os
+enabled = 1
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 1
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhel-8-for-x86_64-highavailability-rpms]
+name = Red Hat Enterprise Linux 8 for x86_64 - High Availability (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/rhel8/$releasever/x86_64/highavailability/os
+enabled = 1
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 1
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[satellite-tools-6.5-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat Satellite Tools 6.5 for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/sat-tools/6.5/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-15-tools-for-rhel-8-x86_64-source-rpms]
+name = Red Hat OpenStack Platform 15 Tools for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/openstack-tools/15/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[advanced-virt-crb-for-rhel-8-x86_64-debug-rpms]
+name = Advanced Virtualization CodeReady Builder for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/advanced-virt-crb/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[cert-1-for-rhel-8-x86_64-source-rpms]
+name = Red Hat Certification for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/cert/1/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[advanced-virt-for-rhel-8-x86_64-source-rpms]
+name = Advanced Virtualization for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/advanced-virt/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[ansible-2.9-for-rhel-8-x86_64-source-rpms]
+name = Red Hat Ansible Engine 2.9 for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2.9/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhceph-4-for-rhel-8-x86_64-textonly-rpms]
+name = Red Hat Ceph Storage 4 Text-Only Advisories for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/rhceph-textonly/4/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[ansible-2.8-for-rhel-8-x86_64-rpms]
+name = Red Hat Ansible Engine 2.8 for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2.8/os
+enabled = 1
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 1
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[cfme-5.11-beta-for-rhel-8-x86_64-source-rpms]
+name = Red Hat CloudForms Management Engine 5.11 Beta for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/cfme/5.11/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[satellite-tools-6.7-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat Satellite Tools 6.7 for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/sat-tools/6.7/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[fast-datapath-for-rhel-8-x86_64-source-rpms]
+name = Fast Datapath for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/fast-datapath/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-beta-devtools-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat OpenStack Platform Beta Developer Tools for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/openstack-devtools/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release,file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-beta
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-16-devtools-for-rhel-8-x86_64-rpms]
+name = Red Hat OpenStack Platform 16 Developer Tools for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/openstack-devtools/16/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhel-8-for-x86_64-highavailability-debug-rpms]
+name = Red Hat Enterprise Linux 8 for x86_64 - High Availability (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/rhel8/$releasever/x86_64/highavailability/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[cert-1-for-rhel-8-x86_64-rpms]
+name = Red Hat Certification for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/cert/1/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rh-gluster-3-client-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat Storage Native Client for RHEL 8 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/rhgs-client/3.5/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[fast-datapath-beta-for-rhel-8-x86_64-source-rpms]
+name = Fast Datapath Beta for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/fast-datapath/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-beta,file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[cert-1-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat Certification for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/cert/1/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-16-for-rhel-8-x86_64-source-rpms]
+name = Red Hat OpenStack Platform 16 for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/openstack/16/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-15-tools-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat OpenStack Platform 15 Tools for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/openstack-tools/15/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[codeready-builder-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat CodeReady Linux Builder for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/rhel8/$releasever/x86_64/codeready-builder/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[fast-datapath-for-rhel-8-x86_64-debug-rpms]
+name = Fast Datapath for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/fast-datapath/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhceph-4-tools-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat Ceph Storage Tools 4 for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/rhceph-tools/4/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhel-8-for-x86_64-nfv-debug-rpms]
+name = Red Hat Enterprise Linux 8 for x86_64 - Real Time for NFV (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/rhel8/$releasever/x86_64/nfv/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-beta-for-rhel-8-x86_64-source-rpms]
+name = Red Hat OpenStack Platform Beta for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/openstack/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release,file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-beta
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhel-8-for-x86_64-baseos-debug-rpms]
+name = Red Hat Enterprise Linux 8 for x86_64 - BaseOS (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/rhel8/$releasever/x86_64/baseos/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rh-sso-7.3-for-rhel-8-x86_64-debug-rpms]
+name = Single Sign-On 7.3 for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/rh-sso/7.3/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhel-8-for-x86_64-nfv-rpms]
+name = Red Hat Enterprise Linux 8 for x86_64 - Real Time for NFV (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/rhel8/$releasever/x86_64/nfv/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[ansible-2.8-for-rhel-8-x86_64-source-rpms]
+name = Red Hat Ansible Engine 2.8 for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2.8/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhel-8-for-x86_64-supplementary-rpms]
+name = Red Hat Enterprise Linux 8 for x86_64 - Supplementary (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/rhel8/$releasever/x86_64/supplementary/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[advanced-virt-beta-for-rhel-8-x86_64-source-rpms]
+name = Advanced Virtualization Beta for RHEL 8 x86_64 (Source RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/advanced-virt/source/SRPMS
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[advanced-virt-beta-for-rhel-8-x86_64-rpms]
+name = Advanced Virtualization Beta for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/beta/layered/rhel8/x86_64/advanced-virt/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[openstack-16-devtools-for-rhel-8-x86_64-debug-rpms]
+name = Red Hat OpenStack Platform 16 Developer Tools for RHEL 8 x86_64 (Debug RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/openstack-devtools/16/debug
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[rhceph-4-tools-for-rhel-8-x86_64-rpms]
+name = Red Hat Ceph Storage Tools 4 for RHEL 8 x86_64 (RPMs)
+baseurl = https://cdn.redhat.com/content/dist/layered/rhel8/x86_64/rhceph-tools/4/os
+enabled = 0
+gpgcheck = 1
+gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+sslverify = 1
+sslcacert = /etc/rhsm/ca/redhat-uep.pem
+sslclientkey = /etc/pki/entitlement/6256882101931744651-key.pem
+sslclientcert = /etc/pki/entitlement/6256882101931744651.pem
+metadata_expire = 86400
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000

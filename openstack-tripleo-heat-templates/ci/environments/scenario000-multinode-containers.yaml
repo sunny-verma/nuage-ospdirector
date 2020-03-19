@@ -1,0 +1,37 @@
+resource_registry:
+  OS::TripleO::Controller::Net::SoftwareConfig: ../common/net-config-multinode.yaml
+  OS::TripleO::Compute::Net::SoftwareConfig: ../common/net-config-multinode.yaml
+  # Some infra instances don't pass the ping test but are otherwise working.
+  # Since the OVB jobs also test this functionality we can shut it off here.
+  OS::TripleO::AllNodes::Validation: ../common/all-nodes-validation-disabled.yaml
+
+  OS::TripleO::Services::OsloMessagingRpc: ../../deployment/rabbitmq/rabbitmq-messaging-rpc-container-puppet.yaml
+  OS::TripleO::Services::OsloMessagingNotify: ../../deployment/rabbitmq/rabbitmq-messaging-notify-shared-puppet.yaml
+
+parameter_defaults:
+  ControllerServices:
+    - OS::TripleO::Services::CACerts
+    - OS::TripleO::Services::ContainerImagePrepare
+    - OS::TripleO::Services::HAproxy
+    - OS::TripleO::Services::Keepalived
+    - OS::TripleO::Services::Kernel
+    - OS::TripleO::Services::Keystone
+    - OS::TripleO::Services::MySQL
+    - OS::TripleO::Services::MySQLClient
+    - OS::TripleO::Services::OsloMessagingRpc
+    - OS::TripleO::Services::OsloMessagingNotify
+    - OS::TripleO::Services::HAproxy
+    - OS::TripleO::Services::Keepalived
+    - OS::TripleO::Services::Memcached
+    - OS::TripleO::Services::Podman
+    - OS::TripleO::Services::Snmp
+    - OS::TripleO::Services::Timesync
+    - OS::TripleO::Services::Timezone
+    - OS::TripleO::Services::TripleoPackages
+    - OS::TripleO::Services::TripleoFirewall
+    - OS::TripleO::Services::Sshd
+  Debug: true
+  DockerPuppetDebug: True
+  NotificationDriver: 'noop'
+  CephAnsibleRepo: "rhceph-4-tools-for-rhel-8-x86_64-rpms"
+  ContainerCli: podman

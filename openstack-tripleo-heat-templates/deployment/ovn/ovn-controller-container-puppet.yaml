@@ -1,0 +1,304 @@
+heat_template_version: rocky
+
+description: >
+  OpenStack containerized Ovn Controller agent.
+
+parameters:
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ContainerOvnControllerImage:
+    description: image
+    type: string
+  ContainerOvnControllerConfigImage:
+    description: The container image to use for the ovn_controller config_volume
+    type: string
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  DeployIdentifier:
+    default: ''
+    type: string
+    description: >
+      Setting this to a unique value will re-run any deployment tasks which
+      perform configuration on a Heat stack-update.
+  OVNSouthboundServerPort:
+    description: Port of the Southbound DB Server
+    type: number
+    default: 6642
+  NeutronBridgeMappings:
+    description: >
+      The OVS logical->physical bridge mappings to use. See the Neutron
+      documentation for details. Defaults to mapping br-ex - the external
+      bridge on hosts - to a physical name 'datacentre' which can be used
+      to create provider networks (and we use this for the default floating
+      network) - if changing this either use different post-install network
+      scripts or be sure to keep 'datacentre' as a mapping network name.
+    type: comma_delimited_list
+    default: "datacentre:br-ex"
+    tags:
+      - role_specific
+  OVNIntegrationBridge:
+    description: >
+      Name of the OVS bridge to use as integration bridge by OVN Controller.
+    type: string
+    default: "br-int"
+  OVNMetadataEnabled:
+    description: Whether Metadata Service has to be enabled
+    type: boolean
+    default: true
+  OVNCMSOptions:
+    description: The CMS options to configure in ovs db
+    type: string
+    default: ""
+    tags:
+      - role_specific
+  OvsHwOffload:
+    default: false
+    description: |
+      Enable OVS Hardware Offload. This feature supported from OVS 2.8.0
+    type: boolean
+    tags:
+      - role_specific
+  OVNRemoteProbeInterval:
+    description: Probe interval in ms
+    type: number
+    default: 60000
+  EnableInternalTLS:
+    type: boolean
+    default: false
+  InternalTLSCAFile:
+    default: '/etc/ipa/ca.crt'
+    type: string
+    description: Specifies the default CA cert to use if TLS is used for
+      services in the internal network.
+  OVNOpenflowProbeInterval:
+    description: >
+      The inactivity probe interval of the OpenFlow connection to the
+      OpenvSwitch integration bridge, in seconds.
+    type: number
+    default: 60
+
+conditions:
+  force_config_drive:  {equals: [{get_param: OVNMetadataEnabled}, false]}
+  internal_tls_enabled: {equals: [{get_param: EnableInternalTLS}, true]}
+
+resources:
+
+  ContainersCommon:
+    type: ../containers-common.yaml
+
+  # Merging role-specific parameters (RoleParameters) with the default parameters.
+  # RoleParameters will have the precedence over the default parameters.
+  RoleParametersValue:
+    type: OS::Heat::Value
+    properties:
+      type: json
+      value:
+        map_replace:
+          - map_replace:
+            - ovn::controller::ovn_bridge_mappings: NeutronBridgeMappings
+              ovn::controller::ovn_cms_options: OVNCMSOptions
+              ovn::controller::enable_hw_offload: OvsHwOffload
+            - values: {get_param: [RoleParameters]}
+          - values:
+              NeutronBridgeMappings: {get_param: NeutronBridgeMappings}
+              OVNCMSOptions: {get_param: OVNCMSOptions}
+              OvsHwOffload: {get_param: OvsHwOffload}
+
+outputs:
+  role_data:
+    description: Role data for the Ovn Controller agent.
+    value:
+      service_name: ovn_controller
+      config_settings:
+        map_merge:
+          - get_attr: [RoleParametersValue, value]
+          - ovn::southbound::port: {get_param: OVNSouthboundServerPort}
+            ovn::controller::ovn_encap_ip:
+              str_replace:
+                 template:
+                   "%{hiera('$NETWORK')}"
+                 params:
+                   $NETWORK: {get_param: [ServiceNetMap, NeutronTenantNetwork]}
+            ovn::controller::ovn_bridge: {get_param: OVNIntegrationBridge}
+            ovn::controller::hostname: "%{hiera('fqdn_canonical')}"
+            ovn::controller::ovn_remote_probe_interval: {get_param: OVNRemoteProbeInterval}
+            ovn::controller::ovn_openflow_probe_interval: {get_param: OVNOpenflowProbeInterval}
+            tripleo::ovn_controller::firewall_rules:
+              '118 neutron vxlan networks':
+                    proto: 'udp'
+                    dport: 4789
+              '119 neutron geneve networks':
+                    proto: 'udp'
+                    dport: 6081
+          - if:
+              - force_config_drive
+              - nova::compute::force_config_drive: true
+              - {}
+          -
+            if:
+            - internal_tls_enabled
+            - generate_service_certificates: true
+              tripleo::profile::base::neutron::agents::ovn::protocol: 'ssl'
+              ovn_controller_certificate_specs:
+                service_certificate: '/etc/pki/tls/certs/ovn_controller.crt'
+                service_key: '/etc/pki/tls/private/ovn_controller.key'
+                hostname:
+                  str_replace:
+                    template: "%{hiera('fqdn_NETWORK')}"
+                    params:
+                      NETWORK: {get_param: [ServiceNetMap, OvnDbsNetwork]}
+                principal:
+                  str_replace:
+                    template: "ovn_controller/%{hiera('fqdn_NETWORK')}"
+                    params:
+                      NETWORK: {get_param: [ServiceNetMap, OvnDbsNetwork]}
+            - {}
+      service_config_settings: {}
+      # BEGIN DOCKER SETTINGS
+      puppet_config:
+        puppet_tags: vs_config,exec
+        config_volume: ovn_controller
+        step_config: |
+          include ::tripleo::profile::base::neutron::agents::ovn
+        config_image: {get_param: ContainerOvnControllerConfigImage}
+        # We need to mount /run for puppet_config step. This is because
+        # puppet-vswitch runs the commands "ovs-vsctl set open_vswitch . external_ids:..."
+        # to configure the required parameters in ovs db which will be read
+        # by ovn-controller. And ovs-vsctl talks to the ovsdb-server (hosting conf.db)
+        # on the unix domain socket - /run/openvswitch/db.sock
+        volumes:
+          - /lib/modules:/lib/modules:ro
+          - /run/openvswitch:/run/openvswitch:shared,z
+          # Needed for creating module load files
+          - /etc/sysconfig/modules:/etc/sysconfig/modules
+      kolla_config:
+        /var/lib/kolla/config_files/ovn_controller.json:
+          command:
+            list_join:
+              - ' '
+              - - /usr/bin/ovn-controller --pidfile --log-file unix:/run/openvswitch/db.sock
+                - if:
+                  - internal_tls_enabled
+                  - list_join:
+                    - ' '
+                    - - -p /etc/pki/tls/private/ovn_controller.key -c /etc/pki/tls/certs/ovn_controller.crt -C
+                      - {get_param: InternalTLSCAFile}
+                  - ''
+          permissions:
+            - path: /var/log/openvswitch
+              owner: root:root
+              recurse: true
+            - path: /var/log/ovn
+              owner: root:root
+              recurse: true
+      metadata_settings:
+        if:
+          - internal_tls_enabled
+          - - service: ovn_controller
+              network: {get_param: [ServiceNetMap, OvnDbsNetwork]}
+              type: node
+          - null
+      docker_config:
+        step_4:
+          configure_cms_options:
+            start_order: 0
+            detach: false
+            net: host
+            privileged: true
+            user: root
+            command: ['/bin/bash', '-c', 'CMS_OPTS=$(hiera ovn::controller::ovn_cms_options -c /etc/puppet/hiera.yaml);  if [ X"$CMS_OPTS" !=  X ]; then ovs-vsctl set open . external_ids:ovn-cms-options=$CMS_OPTS; fi']
+            image: &ovn_controller_image {get_param: ContainerOvnControllerImage}
+            volumes:
+              list_concat:
+                 - {get_attr: [ContainersCommon, volumes]}
+                 -
+                   - /lib/modules:/lib/modules:ro
+                   - /run/openvswitch:/run/openvswitch:shared,z
+            environment:
+              TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}
+          ovn_controller:
+            start_order: 1
+            image: *ovn_controller_image
+            net: host
+            privileged: true
+            user: root
+            restart: always
+            healthcheck:
+              test:
+                list_join:
+                  - ' '
+                  - - '/openstack/healthcheck'
+                    - yaql:
+                        expression: str($.data.port)
+                        data:
+                          port: {get_param: OVNSouthboundServerPort}
+            volumes:
+              list_concat:
+                -
+                  - /var/lib/kolla/config_files/ovn_controller.json:/var/lib/kolla/config_files/config.json:ro
+                  - /lib/modules:/lib/modules:ro
+                  # TODO(numans): This is temporary. Mount /run/openvswitch once
+                  # openvswitch systemd script is fixed to not delete /run/openvswitch
+                  # folder in the host when openvswitch service is stopped.
+                  - /run:/run
+                  - /var/lib/openvswitch/ovn:/run/ovn:shared,z
+                  - /var/log/containers/openvswitch:/var/log/openvswitch:z
+                  - /var/log/containers/openvswitch:/var/log/ovn:z
+                - if:
+                  - internal_tls_enabled
+                  -
+                    - list_join:
+                      - ':'
+                      - - {get_param: InternalTLSCAFile}
+                        - {get_param: InternalTLSCAFile}
+                        - 'ro'
+                    - /etc/pki/tls/certs/ovn_controller.crt:/etc/pki/tls/certs/ovn_controller.crt
+                    - /etc/pki/tls/private/ovn_controller.key:/etc/pki/tls/private/ovn_controller.key
+                  - null
+            environment:
+              KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+      host_prep_tasks:
+        - name: create persistent directories
+          file:
+            path: "{{ item.path }}"
+            state: directory
+            setype: "{{ item.setype }}"
+          with_items:
+            - { 'path': /var/log/containers/openvswitch, 'setype': svirt_sandbox_file_t }
+            - { 'path': /var/log/openvswitch, 'setype': openvswitch_log_t }
+            - { 'path': /var/lib/openvswitch/ovn, 'setype': svirt_sandbox_file_t }
+        - name: openvswitch logs readme
+          copy:
+            dest: /var/log/openvswitch/readme.txt
+            content: |
+              Log files from openvswitch containers can be found under
+              /var/log/containers/openvswitch.
+          ignore_errors: true
+        - name: enable virt_sandbox_use_netlink for healthcheck
+          seboolean:
+            name: virt_sandbox_use_netlink
+            persistent: yes
+            state: yes
+      upgrade_tasks: []

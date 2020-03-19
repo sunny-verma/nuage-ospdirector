@@ -1,0 +1,205 @@
+heat_template_version: rocky
+
+description: >
+  OpenStack containerized Ceilometer Agent Central service
+
+parameters:
+  ContainerCeilometerCentralImage:
+    description: image
+    type: string
+  ContainerCeilometerConfigImage:
+    description: The container image to use for the ceilometer config_volume
+    type: string
+  CeilometerAgentCentralLoggingSource:
+    type: json
+    default:
+      tag: openstack.ceilometer.agent.central
+      file: /var/log/containers/ceilometer/central.log
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  RedisPassword:
+    description: The password for the redis service account.
+    type: string
+    hidden: true
+  MonitoringSubscriptionCeilometerCentral:
+    default: 'overcloud-ceilometer-agent-central'
+    type: string
+  CeilometerEnableGnocchi:
+    default: false
+    description: Whether to enable gnocchi usage.
+    type: boolean
+
+conditions:
+    ceilometer_enable_gnocchi: {equals: [{get_param: CeilometerEnableGnocchi}, True]}
+
+resources:
+
+  ContainersCommon:
+    type: ../containers-common.yaml
+
+  CeilometerServiceBase:
+    type: ./ceilometer-base-container-puppet.yaml
+    properties:
+      ServiceData: {get_param: ServiceData}
+      ServiceNetMap: {get_param: ServiceNetMap}
+      DefaultPasswords: {get_param: DefaultPasswords}
+      EndpointMap: {get_param: EndpointMap}
+      RoleName: {get_param: RoleName}
+      RoleParameters: {get_param: RoleParameters}
+
+outputs:
+  role_data:
+    description: Role data for the Ceilometer Agent Central role.
+    value:
+      service_name: ceilometer_agent_central
+      monitoring_subscription: {get_param: MonitoringSubscriptionCeilometerCentral}
+      config_settings:
+        map_merge:
+          - get_attr: [CeilometerServiceBase, role_data, config_settings]
+          - ceilometer_redis_password: {get_param: RedisPassword}
+            central_namespace: true
+      service_config_settings:
+        map_merge:
+          - get_attr: [CeilometerServiceBase, role_data, service_config_settings]
+          - rsyslog:
+              tripleo_logging_sources_ceilometer_agent_central:
+                - {get_param: CeilometerAgentCentralLoggingSource}
+      # BEGIN DOCKER SETTINGS
+      puppet_config:
+        config_volume: ceilometer
+        puppet_tags: ceilometer_config
+        step_config: |
+          include ::tripleo::profile::base::ceilometer::agent::polling
+        config_image: {get_param: ContainerCeilometerConfigImage}
+      kolla_config:
+        /var/lib/kolla/config_files/ceilometer_agent_central.json:
+          command: /usr/bin/ceilometer-polling --polling-namespaces central --logfile /var/log/ceilometer/central.log
+          config_files:
+            - source: "/var/lib/kolla/config_files/src/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+      docker_config:
+        step_3:
+          ceilometer_init_log:
+            start_order: 0
+            image: &ceilometer_agent_central_image {get_param: ContainerCeilometerCentralImage}
+            net: none
+            user: root
+            command: ['/bin/bash', '-c', 'chown -R ceilometer:ceilometer /var/log/ceilometer']
+            volumes:
+              - /var/log/containers/ceilometer:/var/log/ceilometer:z
+        step_4:
+          ceilometer_agent_central:
+            image: *ceilometer_agent_central_image
+            net: host
+            privileged: false
+            restart: always
+            healthcheck:
+              test: /openstack/healthcheck
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/kolla/config_files/ceilometer_agent_central.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/ceilometer/:/var/lib/kolla/config_files/src:ro
+                  - /var/log/containers/ceilometer:/var/log/ceilometer:z
+            environment:
+              KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+        step_5:
+          map_merge:
+            - if:
+              - ceilometer_enable_gnocchi
+              - ceilometer_gnocchi_upgrade:
+                  start_order: 99
+                  image: *ceilometer_agent_central_image
+                  net: host
+                  detach: false
+                  privileged: false
+                  user: root
+                  healthcheck:
+                    test: /openstack/healthcheck
+                  volumes:
+                    list_concat:
+                      - {get_attr: [ContainersCommon, volumes]}
+                      -
+                        - /var/lib/config-data/ceilometer/etc/ceilometer/:/etc/ceilometer/:ro
+                        - /var/log/containers/ceilometer:/var/log/ceilometer:z
+                  command:
+                    - '/usr/bin/bootstrap_host_exec'
+                    - 'ceilometer_agent_central'
+                    - "su ceilometer -s /bin/bash -c 'for n in {1..10}; do /usr/bin/ceilometer-upgrade && exit 0 || sleep 30; done; exit 1'"
+              - {}
+      host_prep_tasks:
+        - name: create persistent directories
+          file:
+            path: "{{ item.path }}"
+            state: directory
+            setype: "{{ item.setype }}"
+          with_items:
+            - { 'path': /var/log/ceilometer, 'setype': svirt_sandbox_file_t }
+            - { 'path': /var/log/containers/ceilometer, 'setype': svirt_sandbox_file_t }
+        - name: ceilometer logs readme
+          copy:
+            dest: /var/log/ceilometer/readme.txt
+            content: |
+              Log files from ceilometer containers can be found under
+              /var/log/containers/ceilometer.
+          ignore_errors: true
+      external_upgrade_tasks:
+        - when:
+            - step|int == 1
+          tags:
+            - never
+            - system_upgrade_transfer_data
+            - system_upgrade_stop_services
+          block:
+            - name: Stop ceilometer agent central container
+              import_role:
+                name: tripleo-container-stop
+              vars:
+                tripleo_containers_to_stop:
+                  - ceilometer_agent_central
+                tripleo_delegate_to: "{{ groups['ceilometer_agent_central'] | default([]) }}"
+      fast_forward_upgrade_tasks:
+        - when:
+            - step|int == 0
+            - release == 'rocky'
+          block:
+            - name: FFU check if openstack-ceilometer-central is deployed
+              command: systemctl is-enabled --quiet openstack-ceilometer-central
+              ignore_errors: True
+              register: ceilometer_agent_central_enabled_result
+            - name: Set fact ceilometer_agent_central_enabled
+              set_fact:
+                ceilometer_agent_central_enabled: "{{ ceilometer_agent_central_enabled_result.rc == 0 }}"
+        - name: FFU stop and disable openstack-ceilometer-central service
+          service: name=openstack-ceilometer-central state=stopped enabled=no
+          when:
+            - step|int == 1
+            - release == 'rocky'
+            - ceilometer_agent_central_enabled|bool

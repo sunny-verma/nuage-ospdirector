@@ -1,0 +1,201 @@
+heat_template_version: rocky
+
+description: >
+  OpenStack containerized Manila Share service
+
+parameters:
+  ContainerManilaShareImage:
+    description: image
+    type: string
+  ContainerManilaConfigImage:
+    description: image
+    type: string
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  ManilaCephClientUserName:
+    default: manila
+    type: string
+  CephClusterName:
+    type: string
+    default: ceph
+    description: The Ceph cluster name.
+    constraints:
+    - allowed_pattern: "[a-zA-Z0-9]+"
+      description: >
+        The Ceph cluster name must be at least 1 character and contain only
+        letters and numbers.
+  MonitoringSubscriptionManilaShare:
+    default: 'overcloud-manila-share'
+    type: string
+  ManilaPassword:
+    description: The password for the manila service account.
+    type: string
+    hidden: true
+
+resources:
+
+  ContainersCommon:
+    type: ../containers-common.yaml
+
+  MySQLClient:
+    type: ../../deployment/database/mysql-client.yaml
+
+  ManilaBase:
+    type: ./manila-base.yaml
+    properties:
+      EndpointMap: {get_param: EndpointMap}
+      ServiceData: {get_param: ServiceData}
+      ServiceNetMap: {get_param: ServiceNetMap}
+      DefaultPasswords: {get_param: DefaultPasswords}
+      RoleName: {get_param: RoleName}
+      RoleParameters: {get_param: RoleParameters}
+
+  ManilaShareCommon:
+    type: ./manila-share-common.yaml
+
+outputs:
+  role_data:
+    description: Role data for the Manila Share role.
+    value:
+      service_name: manila_share
+      monitoring_subscription: {get_param: MonitoringSubscriptionManilaShare}
+      config_settings:
+        map_merge:
+          - get_attr: [ManilaBase, role_data, config_settings]
+          - manila::volume::cinder::cinder_admin_tenant_name: 'service'
+            # keystone_authtoken
+            manila::keystone::authtoken::password: {get_param: ManilaPassword}
+            manila::keystone::authtoken::www_authenticate_uri: {get_param: [EndpointMap, KeystoneInternal, uri]}
+            manila::keystone::authtoken::auth_url: { get_param: [EndpointMap, KeystoneInternal, uri_no_suffix] }
+            manila::keystone::authtoken::project_name: 'service'
+            # compute
+            manila::compute::nova::username: 'manila'
+            manila::compute::nova::password: {get_param: ManilaPassword}
+            manila::compute::nova::auth_type: 'password'
+            manila::compute::nova::project_name: 'service'
+            manila::compute::nova::user_domain_name: 'Default'
+            manila::compute::nova::project_domain_name: 'Default'
+            manila::compute::nova::auth_url: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix]}
+            # network
+            manila::network::neutron::username: 'manila'
+            manila::network::neutron::password: {get_param: ManilaPassword}
+            manila::network::neutron::auth_type: 'password'
+            manila::network::neutron::project_name: 'service'
+            manila::network::neutron::user_domain_name: 'Default'
+            manila::network::neutron::project_domain_name: 'Default'
+            manila::network::neutron::auth_url: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix]}
+      service_config_settings:
+        {get_attr: [ManilaBase, role_data, service_config_settings]}
+      # BEGIN DOCKER SETTINGS
+      puppet_config:
+        config_volume: manila
+        puppet_tags: manila_config,file,concat,file_line
+        step_config:
+          list_join:
+            - "\n"
+            - - "include ::tripleo::profile::base::manila::share"
+              - {get_attr: [MySQLClient, role_data, step_config]}
+        config_image: {get_param: ContainerManilaConfigImage}
+      kolla_config:
+        /var/lib/kolla/config_files/manila_share.json:
+          command: /usr/bin/manila-share --config-file /usr/share/manila/manila-dist.conf --config-file /etc/manila/manila.conf
+          config_files:
+            - source: "/var/lib/kolla/config_files/src/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+            - source: "/var/lib/kolla/config_files/src-ceph/"
+              dest: "/etc/ceph/"
+              merge: true
+              preserve_properties: true
+          permissions:
+            - path: /var/log/manila
+              owner: manila:manila
+              recurse: true
+            - path: /var/lib/manila
+              owner: manila:manila
+              recurse: true
+            - path:
+                str_replace:
+                  template: /etc/ceph/CLUSTER.client.USER.keyring
+                  params:
+                    CLUSTER: {get_param: CephClusterName}
+                    USER: {get_param: ManilaCephClientUserName}
+              owner: manila:manila
+              perm: '0600'
+      docker_config:
+        step_4:
+          manila_share:
+            image: &manila_share_image {get_param: ContainerManilaShareImage}
+            net: host
+            ipc: host
+            user: root
+            restart: always
+            volumes: {get_attr: [ManilaShareCommon, manila_share_volumes]}
+            environment: {get_attr: [ManilaShareCommon, manila_share_environment]}
+      host_prep_tasks:
+        - name: create persistent directories
+          file:
+            path: "{{ item.path }}"
+            state: directory
+            setype: "{{ item.setype }}"
+          with_items:
+            - { 'path': /var/log/containers/manila, 'setype': svirt_sandbox_file_t }
+            - { 'path': /var/lib/manila, 'setype': svirt_sandbox_file_t }
+            - { 'path': /var/log/manila, 'setype': svirt_sandbox_file_t }
+        - name: manila logs readme
+          copy:
+            dest: /var/log/manila/readme.txt
+            content: |
+              Log files from manila containers can be found under
+              /var/log/containers/manila and /var/log/containers/httpd/manila-api.
+          ignore_errors: true
+        - name: ensure ceph configurations exist
+          file:
+            path: /etc/ceph
+            state: directory
+      upgrade_tasks: []
+      fast_forward_upgrade_tasks:
+        - name: Check if manila_share is deployed
+          command: systemctl is-enabled --quiet openstack-manila-share
+          ignore_errors: True
+          register: manila_share_enabled_result
+          when:
+            - step|int == 0
+            - release == 'rocky'
+        - name: Set fact manila_share_enabled
+          set_fact:
+            manila_share_enabled: "{{ manila_share_enabled_result.rc == 0 }}"
+          when:
+            - step|int == 0
+            - release == 'rocky'
+        - name: Stop openstack-manila-share
+          service: name=openstack-manila-share state=stopped enabled=no
+          when:
+            - step|int == 1
+            - release == 'rocky'
+            - manila_share_enabled|bool

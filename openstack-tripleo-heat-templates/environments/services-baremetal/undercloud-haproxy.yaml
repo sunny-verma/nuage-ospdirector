@@ -1,0 +1,2 @@
+resource_registry:
+  OS::TripleO::Services::UndercloudHAProxy: ../../deployment/haproxy/haproxy-container-puppet.yaml

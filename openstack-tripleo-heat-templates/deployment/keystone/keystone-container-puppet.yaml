@@ -1,0 +1,721 @@
+heat_template_version: rocky
+
+description: >
+  OpenStack containerized Keystone service
+
+parameters:
+  ContainerKeystoneImage:
+    description: image
+    type: string
+  ContainerKeystoneConfigImage:
+    description: The container image to use for the keystone config_volume
+    type: string
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  DeployIdentifier:
+    default: ''
+    type: string
+    description: >
+      Setting this to a unique value will re-run any deployment tasks which
+      perform configuration on a Heat stack-update.
+  AdminPassword:
+    description: The password for the keystone admin account, used for monitoring, querying neutron etc.
+    type: string
+    hidden: true
+  KeystoneTokenProvider:
+    description: The keystone token format
+    type: string
+    default: 'fernet'
+    constraints:
+      - allowed_values: ['fernet']
+  EnableInternalTLS:
+    type: boolean
+    default: false
+  KeystoneSSLCertificate:
+    default: ''
+    description: Keystone certificate for verifying token validity.
+    type: string
+  KeystoneSSLCertificateKey:
+    default: ''
+    description: Keystone key for signing tokens.
+    type: string
+    hidden: true
+  KeystoneNotificationFormat:
+    description: The Keystone notification format
+    default: 'basic'
+    type: string
+    constraints:
+      - allowed_values: [ 'basic', 'cadf' ]
+  KeystoneNotificationTopics:
+    description: Keystone notification topics to enable
+    default: []
+    type: comma_delimited_list
+  KeystoneRegion:
+    type: string
+    default: 'regionOne'
+    description: Keystone region for endpoint
+  Debug:
+    type: boolean
+    default: false
+    description: Set to True to enable debugging on all services.
+  KeystoneDebug:
+    default: ''
+    description: Set to True to enable debugging Keystone service.
+    type: string
+    constraints:
+      - allowed_values: [ '', 'true', 'True', 'TRUE', 'false', 'False', 'FALSE']
+  AdminEmail:
+    default: 'admin@example.com'
+    description: The email for the keystone admin account.
+    type: string
+    hidden: true
+  AdminToken:
+    description: The keystone auth secret and db password.
+    type: string
+    hidden: true
+  TokenExpiration:
+    default: 3600
+    description: Set a token expiration time in seconds.
+    type: number
+  KeystoneWorkers:
+    type: string
+    description: Set the number of workers for keystone::wsgi::apache
+    default: '%{::os_workers}'
+  MonitoringSubscriptionKeystone:
+    default: 'overcloud-keystone'
+    type: string
+  KeystoneCredential0:
+    type: string
+    description: The first Keystone credential key. Must be a valid key.
+  KeystoneCredential1:
+    type: string
+    description: The second Keystone credential key. Must be a valid key.
+  KeystoneFernetKeys:
+    type: json
+    description: Mapping containing keystone's fernet keys and their paths.
+  KeystoneFernetMaxActiveKeys:
+    type: number
+    description: The maximum active keys in the keystone fernet key repository.
+    default: 5
+  ManageKeystoneFernetKeys:
+    type: boolean
+    default: true
+    description: Whether TripleO should manage the keystone fernet keys or not.
+                 If set to true, the fernet keys will get the values from the
+                 saved keys repository in mistral (the KeystoneFernetKeys
+                 variable). If set to false, only the stack creation
+                 initializes the keys, but subsequent updates won't touch them.
+  KeystoneLoggingSource:
+    type: json
+    default:
+      tag: openstack.keystone
+      file: /var/log/containers/keystone/keystone.log
+  KeystonePolicies:
+    description: |
+      A hash of policies to configure for Keystone.
+      e.g. { keystone-context_is_admin: { key: context_is_admin, value: 'role:admin' } }
+    default: {}
+    type: json
+  KeystoneLDAPDomainEnable:
+    description: Trigger to call ldap_backend puppet keystone define.
+    type: boolean
+    default: False
+  KeystoneLDAPBackendConfigs:
+    description: Hash containing the configurations for the LDAP backends
+                 configured in keystone.
+    type: json
+    default: {}
+    hidden: true
+  NotificationDriver:
+    type: string
+    default: 'messagingv2'
+    description: Driver or drivers to handle sending notifications.
+  KeystoneChangePasswordUponFirstUse:
+    type: string
+    default: ''
+    description: >-
+      Enabling this option requires users to change their password when the
+      user is created, or upon administrative reset.
+    constraints:
+      - allowed_values: [ '', 'true', 'True', 'TRUE', 'false', 'False', 'FALSE']
+  KeystoneDisableUserAccountDaysInactive:
+    type: string
+    default: ''
+    description: >-
+      The maximum number of days a user can go without authenticating before
+      being considered "inactive" and automatically disabled (locked).
+  KeystoneLockoutDuration:
+    type: string
+    default: ''
+    description: >-
+      The number of seconds a user account will be locked when the maximum
+      number of failed authentication attempts (as specified by
+      KeystoneLockoutFailureAttempts) is exceeded.
+  KeystoneLockoutFailureAttempts:
+    type: string
+    default: ''
+    description: >-
+      The maximum number of times that a user can fail to authenticate before
+      the user account is locked for the number of seconds specified by
+      KeystoneLockoutDuration.
+  KeystoneMinimumPasswordAge:
+    type: string
+    default: ''
+    description: >-
+      The number of days that a password must be used before the user can
+      change it. This prevents users from changing their passwords immediately
+      in order to wipe out their password history and reuse an old password.
+  KeystonePasswordExpiresDays:
+    type: string
+    default: ''
+    description: >-
+      The number of days for which a password will be considered valid before
+      requiring it to be changed.
+  KeystonePasswordRegex:
+    type: string
+    default: ''
+    description: >-
+      The regular expression used to validate password strength requirements.
+  KeystonePasswordRegexDescription:
+    type: string
+    default: ''
+    description: >-
+      Describe your password regular expression here in language for humans.
+  KeystoneUniqueLastPasswordCount:
+    type: string
+    default: ''
+    description: >-
+      This controls the number of previous user password iterations to keep in
+      history, in order to enforce that newly created passwords are unique.
+  KeystoneCorsAllowedOrigin:
+    type: string
+    default: ''
+    description: Indicate whether this resource may be shared with the domain received in the request
+                 "origin" header.
+  KeystoneEnableMember:
+    description: Create the _member_ role, useful for undercloud deployment.
+    type: boolean
+    default: False
+  KeystoneFederationEnable:
+    type: boolean
+    default: false
+    description: Enable support for federated authentication.
+  KeystoneTrustedDashboards:
+    type: comma_delimited_list
+    default: []
+    description: A list of dashboard URLs trusted for single sign-on.
+  KeystoneAuthMethods:
+    type: comma_delimited_list
+    default: []
+    description: >-
+      A list of methods used for authentication.
+  KeystoneOpenIdcEnable:
+    type: boolean
+    default: false
+    description: Enable support for OpenIDC federation.
+  KeystoneOpenIdcIdpName:
+    type: string
+    default: ''
+    description: The name associated with the IdP in Keystone.
+  KeystoneOpenIdcProviderMetadataUrl:
+    type: string
+    default: ''
+    description: The url that points to your OpenID Connect provider metadata
+  KeystoneOpenIdcClientId:
+    type: string
+    default: ''
+    description: >-
+      The client ID to use when handshaking with your OpenID Connect provider
+  KeystoneOpenIdcClientSecret:
+    type: string
+    default: ''
+    description: >-
+      The client secret to use when handshaking with your OpenID
+      Connect provider
+  KeystoneOpenIdcCryptoPassphrase:
+    type: string
+    default: 'openstack'
+    description: >-
+      Passphrase to use when encrypting data for OpenID Connect handshake.
+  KeystoneOpenIdcResponseType:
+    type: string
+    default: 'id_token'
+    description: Response type to be expected from the OpenID Connect provider.
+  KeystoneOpenIdcRemoteIdAttribute:
+    type: string
+    default: 'HTTP_OIDC_ISS'
+    description: >-
+      Attribute to be used to obtain the entity ID of the Identity Provider
+      from the environment.
+  KeystoneOpenIdcEnableOAuth:
+    type: boolean
+    default: false
+    description: >-
+      Enable OAuth 2.0 integration.
+  KeystoneOpenIdcIntrospectionEndpoint:
+    type: string
+    default: ''
+    description: >-
+      OAuth 2.0 introspection endpoint for mod_auth_openidc
+
+resources:
+
+  ContainersCommon:
+    type: ../containers-common.yaml
+
+  MySQLClient:
+    type: ../database/mysql-client.yaml
+
+  ApacheServiceBase:
+    type: ../../deployment/apache/apache-baremetal-puppet.yaml
+    properties:
+      ServiceData: {get_param: ServiceData}
+      ServiceNetMap: {get_param: ServiceNetMap}
+      DefaultPasswords: {get_param: DefaultPasswords}
+      EndpointMap: {get_param: EndpointMap}
+      RoleName: {get_param: RoleName}
+      RoleParameters: {get_param: RoleParameters}
+      EnableInternalTLS: {get_param: EnableInternalTLS}
+
+  KeystoneLogging:
+    type: OS::TripleO::Services::Logging::Keystone
+
+conditions:
+
+  internal_tls_enabled: {equals: [{get_param: EnableInternalTLS}, true]}
+  keystone_fernet_tokens: {equals: [{get_param: KeystoneTokenProvider}, "fernet"]}
+  keystone_ldap_domain_enabled: {equals: [{get_param: KeystoneLDAPDomainEnable}, True]}
+  keystone_federation_enabled: {equals: [{get_param: KeystoneFederationEnable}, True]}
+  keystone_openidc_enabled: {equals: [{get_param: KeystoneOpenIdcEnable}, True]}
+  service_debug_unset: {equals : [{get_param: KeystoneDebug}, '']}
+
+  # Security compliance
+  change_password_upon_first_use_set: {not: {equals: [{get_param: KeystoneChangePasswordUponFirstUse}, '']}}
+  disable_user_account_days_inactive_set: {not: {equals: [{get_param: KeystoneDisableUserAccountDaysInactive}, '']}}
+  lockout_duration_set: {not: {equals: [{get_param: KeystoneLockoutDuration}, '']}}
+  lockout_failure_attempts_set: {not: {equals: [{get_param: KeystoneLockoutFailureAttempts}, '']}}
+  minimum_password_age_set: {not: {equals: [{get_param: KeystoneMinimumPasswordAge}, '']}}
+  password_expires_days_set: {not: {equals: [{get_param: KeystonePasswordExpiresDays}, '']}}
+  password_regex_set: {not: {equals: [{get_param: KeystonePasswordRegex}, '']}}
+  password_regex_description_set: {not: {equals: [{get_param: KeystonePasswordRegexDescription}, '']}}
+  unique_last_password_count_set: {not: {equals: [{get_param: KeystoneUniqueLastPasswordCount}, '']}}
+  cors_allowed_origin_unset: {equals : [{get_param: KeystoneCorsAllowedOrigin}, '']}
+
+outputs:
+  role_data:
+    description: Role data for the Keystone API role.
+    value:
+      service_name: keystone
+      monitoring_subscription: {get_param: MonitoringSubscriptionKeystone}
+      config_settings:
+        map_merge:
+          - get_attr: [ApacheServiceBase, role_data, config_settings]
+          -
+            if:
+            - cors_allowed_origin_unset
+            - {}
+            - keystone::cors::allowed_origin: {get_param: KeystoneCorsAllowedOrigin}
+          - keystone_enable_member: {get_param: KeystoneEnableMember}
+          - keystone::database_connection:
+              make_url:
+                scheme: {get_param: [EndpointMap, MysqlInternal, protocol]}
+                username: keystone
+                password: {get_param: AdminToken}
+                host: {get_param: [EndpointMap, MysqlInternal, host]}
+                path: /keystone
+                query:
+                  read_default_file: /etc/my.cnf.d/tripleo.cnf
+                  read_default_group: tripleo
+            keystone::token_expiration: {get_param: TokenExpiration}
+            keystone::admin_token: {get_param: AdminToken}
+            keystone::admin_password: {get_param: AdminPassword}
+            keystone::roles::admin::password: {get_param: AdminPassword}
+            keystone::policy::policies: {get_param: KeystonePolicies}
+            keystone_ssl_certificate: {get_param: KeystoneSSLCertificate}
+            keystone_ssl_certificate_key: {get_param: KeystoneSSLCertificateKey}
+            keystone::token_provider: {get_param: KeystoneTokenProvider}
+            keystone::enable_fernet_setup: {if: [keystone_fernet_tokens, true, false]}
+            keystone::fernet_max_active_keys: {get_param: KeystoneFernetMaxActiveKeys}
+            keystone::enable_proxy_headers_parsing: true
+            keystone::enable_credential_setup: true
+            keystone::credential_keys:
+              '/etc/keystone/credential-keys/0':
+                content: {get_param: KeystoneCredential0}
+              '/etc/keystone/credential-keys/1':
+                content: {get_param: KeystoneCredential1}
+            keystone::fernet_keys: {get_param: KeystoneFernetKeys}
+            keystone::fernet_replace_keys: {get_param: ManageKeystoneFernetKeys}
+            keystone::logging::debug:
+              if:
+              - service_debug_unset
+              - {get_param: Debug }
+              - {get_param: KeystoneDebug }
+            keystone::notification_driver: {get_param: NotificationDriver}
+            keystone::notification_format: {get_param: KeystoneNotificationFormat}
+            tripleo::profile::base::keystone::extra_notification_topics: {get_param: KeystoneNotificationTopics}
+            keystone::roles::admin::email: {get_param: AdminEmail}
+            keystone::roles::admin::password: {get_param: AdminPassword}
+            keystone::endpoint::public_url: {get_param: [EndpointMap, KeystonePublic, uri_no_suffix]}
+            keystone::endpoint::internal_url: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix]}
+            keystone::endpoint::admin_url: {get_param: [EndpointMap, KeystoneAdmin, uri_no_suffix]}
+            keystone::endpoint::region: {get_param: KeystoneRegion}
+            keystone::endpoint::version: ''
+            keystone::admin_port: {get_param: [EndpointMap, KeystoneAdmin, port]}
+            keystone::rabbit_heartbeat_timeout_threshold: 60
+            keystone::roles::admin::service_tenant: 'service'
+            keystone::roles::admin::admin_tenant: 'admin'
+            keystone::config::keystone_config:
+              ec2/driver:
+                value: 'keystone.contrib.ec2.backends.sql.Ec2'
+            keystone::service_name: 'httpd'
+            keystone::enable_ssl: {get_param: EnableInternalTLS}
+            keystone::wsgi::apache::api_port:
+              - 5000
+              - {get_param: [EndpointMap, KeystoneAdmin, port]}
+            keystone::wsgi::apache::ssl: {get_param: EnableInternalTLS}
+            keystone::wsgi::apache::servername:
+              str_replace:
+                template:
+                  "%{hiera('fqdn_$NETWORK')}"
+                params:
+                  $NETWORK: {get_param: [ServiceNetMap, KeystonePublicApiNetwork]}
+            keystone::wsgi::apache::servername_admin:
+              str_replace:
+                template:
+                  "%{hiera('fqdn_$NETWORK')}"
+                params:
+                  $NETWORK: {get_param: [ServiceNetMap, KeystoneAdminApiNetwork]}
+            keystone::wsgi::apache::workers: {get_param: KeystoneWorkers}
+            # override via extraconfig:
+            keystone::wsgi::apache::threads: 1
+            keystone::db::database_db_max_retries: -1
+            keystone::db::database_max_retries: -1
+            tripleo::keystone::firewall_rules:
+              '111 keystone':
+                dport:
+                  - 5000
+                  - 13000
+                  - {get_param: [EndpointMap, KeystoneAdmin, port]}
+            keystone::public_endpoint: {get_param: [EndpointMap, KeystonePublic, uri_no_suffix]}
+            # NOTE: bind IP is found in hiera replacing the network name with the
+            # local node IP for the given network; replacement examples
+            # (eg. for internal_api):
+            # internal_api -> IP
+            # internal_api_uri -> [IP]
+            # internal_api_subnet - > IP/CIDR
+            # NOTE: this applies to all 2 bind IP settings below...
+            keystone::wsgi::apache::bind_host:
+              - str_replace:
+                  template:
+                    "%{hiera('$NETWORK')}"
+                  params:
+                    $NETWORK: {get_param: [ServiceNetMap, KeystonePublicApiNetwork]}
+              - str_replace:
+                  template:
+                    "%{hiera('$NETWORK')}"
+                  params:
+                    $NETWORK: {get_param: [ServiceNetMap, KeystoneAdminApiNetwork]}
+          -
+            if:
+            - keystone_federation_enabled
+            -
+              keystone_federation_enabled: True
+              keystone::federation::trusted_dashboards:
+                get_param: KeystoneTrustedDashboards
+            - {}
+          -
+            if:
+            - keystone_openidc_enabled
+            -
+              keystone_openidc_enabled: True
+              keystone::federation::openidc::methods:
+                get_param: KeystoneAuthMethods
+              keystone::federation::openidc::keystone_url:
+                get_param: [EndpointMap, KeystonePublic, uri_no_suffix]
+              keystone::federation::openidc::idp_name:
+                get_param: KeystoneOpenIdcIdpName
+              keystone::federation::openidc::openidc_provider_metadata_url:
+                get_param: KeystoneOpenIdcProviderMetadataUrl
+              keystone::federation::openidc::openidc_client_id:
+                get_param: KeystoneOpenIdcClientId
+              keystone::federation::openidc::openidc_client_secret:
+                get_param: KeystoneOpenIdcClientSecret
+              keystone::federation::openidc::openidc_crypto_passphrase:
+                get_param: KeystoneOpenIdcCryptoPassphrase
+              keystone::federation::openidc::openidc_response_type:
+                get_param: KeystoneOpenIdcResponseType
+              keystone::federation::openidc::remote_id_attribute:
+                get_param: KeystoneOpenIdcRemoteIdAttribute
+              keystone::federation::openidc::openidc_oauth_enabled:
+                get_param: KeystoneOpenIdcEnableOAuth
+              keystone::federation::openidc::openidc_introspection_endpoint:
+                get_param: KeystoneOpenIdcIntrospectionEndpoint
+            - {}
+          -
+            if:
+            - keystone_ldap_domain_enabled
+            -
+              tripleo::profile::base::keystone::ldap_backend_enable: True
+              keystone::using_domain_config: True
+              tripleo::profile::base::keystone::ldap_backends_config:
+                get_param: KeystoneLDAPBackendConfigs
+            - {}
+          -
+            if:
+            - change_password_upon_first_use_set
+            - keystone::security_compliance::change_password_upon_first_use: {get_param: KeystoneChangePasswordUponFirstUse}
+            - {}
+          -
+            if:
+            - disable_user_account_days_inactive_set
+            - keystone::security_compliance::disable_user_account_days_inactive: {get_param: KeystoneDisableUserAccountDaysInactive}
+            - {}
+          -
+            if:
+            - lockout_duration_set
+            - keystone::security_compliance::lockout_duration: {get_param: KeystoneLockoutDuration}
+            - {}
+          -
+            if:
+            - lockout_failure_attempts_set
+            - keystone::security_compliance::lockout_failure_attempts: {get_param: KeystoneLockoutFailureAttempts}
+            - {}
+          -
+            if:
+            - minimum_password_age_set
+            - keystone::security_compliance::minimum_password_age: {get_param: KeystoneMinimumPasswordAge}
+            - {}
+          -
+            if:
+            - password_expires_days_set
+            - keystone::security_compliance::password_expires_days: {get_param: KeystonePasswordExpiresDays}
+            - {}
+          -
+            if:
+            - password_regex_set
+            - keystone::security_compliance::password_regex: {get_param: KeystonePasswordRegex}
+            - {}
+          -
+            if:
+            - password_regex_description_set
+            - keystone::security_compliance::password_regex_description: {get_param: KeystonePasswordRegexDescription}
+            - {}
+          -
+            if:
+            - unique_last_password_count_set
+            - keystone::security_compliance::unique_last_password_count: {get_param: KeystoneUniqueLastPasswordCount}
+            - {}
+          - apache::default_vhost: false
+          - get_attr: [KeystoneLogging, config_settings]
+      service_config_settings:
+        rsyslog:
+          tripleo_logging_sources_keystone: {get_param: KeystoneLoggingSource}
+        mysql:
+          keystone::db::mysql::password: {get_param: AdminToken}
+          keystone::db::mysql::user: keystone
+          keystone::db::mysql::host: {get_param: [EndpointMap, MysqlInternal, host_nobrackets]}
+          keystone::db::mysql::dbname: keystone
+          keystone::db::mysql::allowed_hosts:
+            - '%'
+            - "%{hiera('mysql_bind_host')}"
+        pacemaker:
+          keystone::endpoint::public_url: {get_param: [EndpointMap, KeystonePublic, uri_no_suffix]}
+          keystone::endpoint::internal_url: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix]}
+          keystone::endpoint::admin_url: {get_param: [EndpointMap, KeystoneAdmin, uri_no_suffix]}
+          keystone::endpoint::region: {get_param: KeystoneRegion}
+          keystone::admin_password: {get_param: AdminPassword}
+        horizon:
+          if:
+          - keystone_ldap_domain_enabled
+          -
+            horizon::keystone_multidomain_support: true
+            horizon::keystone_default_domain: 'Default'
+          - {}
+      # BEGIN DOCKER SETTINGS
+      puppet_config:
+        config_volume: keystone
+        puppet_tags: keystone_config,keystone_domain_config
+        step_config:
+          list_join:
+            - "\n"
+            - - "['Keystone_user', 'Keystone_endpoint', 'Keystone_domain', 'Keystone_tenant', 'Keystone_user_role', 'Keystone_role', 'Keystone_service'].each |String $val| { noop_resource($val) }"
+              - |
+                include ::tripleo::profile::base::keystone
+              - {get_attr: [MySQLClient, role_data, step_config]}
+        config_image: &keystone_config_image {get_param: ContainerKeystoneConfigImage}
+      kolla_config:
+        /var/lib/kolla/config_files/keystone.json:
+          command: /usr/sbin/httpd
+          config_files:
+            - source: "/var/lib/kolla/config_files/src/etc/keystone/fernet-keys"
+              dest: "/etc/keystone/fernet-keys"
+              merge: false
+              preserve_properties: true
+            - source: "/var/lib/kolla/config_files/src/etc/httpd/conf.d"
+              dest: "/etc/httpd/conf.d"
+              merge: false
+              preserve_properties: true
+            - source: "/var/lib/kolla/config_files/src/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+      docker_config:
+        # Kolla_bootstrap/db sync runs before permissions set by kolla_config
+        step_2:
+          get_attr: [KeystoneLogging, docker_config, step_2]
+        step_3:
+          keystone_db_sync:
+            image: &keystone_image {get_param: ContainerKeystoneImage}
+            net: host
+            user: root
+            privileged: false
+            detach: false
+            volumes: &keystone_volumes
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                - {get_attr: [KeystoneLogging, volumes]}
+                -
+                  - /var/lib/kolla/config_files/keystone.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/keystone/:/var/lib/kolla/config_files/src:ro
+                  -
+                    if:
+                      - internal_tls_enabled
+                      - /etc/pki/tls/certs/httpd:/etc/pki/tls/certs/httpd:ro
+                      - ''
+                  -
+                    if:
+                      - internal_tls_enabled
+                      - /etc/pki/tls/private/httpd:/etc/pki/tls/private/httpd:ro
+                      - ''
+            environment:
+              map_merge:
+                - {get_attr: [KeystoneLogging, environment]}
+                - KOLLA_BOOTSTRAP: true
+                  KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+                  TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}
+            command: ['/usr/bin/bootstrap_host_exec', 'keystone', '/usr/local/bin/kolla_start']
+          keystone:
+            start_order: 2
+            image: *keystone_image
+            net: host
+            privileged: false
+            restart: always
+            healthcheck:
+              test: /openstack/healthcheck
+            volumes: *keystone_volumes
+            environment:
+              KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+          keystone_bootstrap:
+            start_order: 3
+            action: exec
+            user: root
+            command:
+              [ 'keystone', '/usr/bin/bootstrap_host_exec', 'keystone' ,'keystone-manage', 'bootstrap' ]
+            environment:
+              KOLLA_BOOTSTRAP: true
+              OS_BOOTSTRAP_PASSWORD: {get_param: AdminPassword}
+        step_4:
+          # There are cases where we need to refresh keystone after the resource provisioning,
+          # such as the case of using LDAP backends for domains. So we trigger a graceful
+          # restart [1], which shouldn't cause service disruption, but will reload new
+          # configurations for keystone.
+          # [1] https://httpd.apache.org/docs/2.4/stopping.html#graceful
+          keystone_refresh:
+            start_order: 1
+            action: exec
+            user: root
+            command:
+              [ 'keystone', 'pkill', '--signal', 'USR1', 'httpd' ]
+      container_puppet_tasks:
+        # Keystone endpoint creation occurs only on single node
+        step_3:
+          config_volume: 'keystone_init_tasks'
+          puppet_tags: 'keystone_config,keystone_domain_config,keystone_endpoint,keystone_identity_provider,keystone_role,keystone_service,keystone_tenant,keystone_user,keystone_user_role,keystone_domain'
+          step_config: 'include ::tripleo::profile::base::keystone'
+          config_image: *keystone_config_image
+      host_prep_tasks: {get_attr: [KeystoneLogging, host_prep_tasks]}
+      metadata_settings:
+        get_attr: [ApacheServiceBase, role_data, metadata_settings]
+      external_upgrade_tasks:
+        - when:
+            - step|int == 1
+          tags:
+            - never
+            - system_upgrade_transfer_data
+            - system_upgrade_stop_services
+          block:
+            - name: Stop keystone container
+              import_role:
+                name: tripleo-container-stop
+              vars:
+                tripleo_containers_to_stop:
+                  - keystone
+                  - keystone_cron
+                tripleo_delegate_to: "{{ groups['keystone'] | default([]) }}"
+      fast_forward_upgrade_tasks:
+        - when:
+            - step|int == 0
+            - release == 'rocky'
+          block:
+            - name: Check for keystone running under apache
+              tags: common
+              shell: "httpd -t -D DUMP_VHOSTS | grep -q keystone_wsgi"
+              ignore_errors: true
+              register: keystone_httpd_enabled_result
+            - name: Set fact keystone_httpd_enabled
+              set_fact:
+                keystone_httpd_enabled: "{{ keystone_httpd_enabled_result.rc == 0 }}"
+            - name: Check if httpd is running
+              ignore_errors: True
+              command: systemctl is-active --quiet httpd
+              register: httpd_running_result
+              when:
+                - httpd_running is undefined
+            - name: Set fact httpd_running if undefined
+              set_fact:
+                httpd_running: "{{ httpd_running_result.rc == 0 }}"
+              when:
+                - httpd_running is undefined
+        - name: Stop and disable keystone (under httpd)
+          service: name=httpd state=stopped enabled=no
+          when:
+            - step|int == 1
+            - release == 'rocky'
+            - keystone_httpd_enabled|bool
+            - httpd_running|bool
+        - name: Keystone package update
+          package:
+            name: 'openstack-keystone*'
+            state: latest
+          when:
+            - step|int == 6
+            - is_bootstrap_node|bool
+        - name: keystone db sync
+          command: keystone-manage db_sync
+          when:
+            - step|int == 8
+            - is_bootstrap_node|bool

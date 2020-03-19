@@ -1,0 +1,210 @@
+heat_template_version: rocky
+
+description: >
+  OpenStack containerized Cinder Backup service
+
+parameters:
+  ContainerCinderBackupImage:
+    description: image
+    type: string
+  ContainerCinderConfigImage:
+    description: The container image to use for the cinder config_volume
+    type: string
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  CephClusterName:
+    type: string
+    default: ceph
+    description: The Ceph cluster name.
+    constraints:
+    - allowed_pattern: "[a-zA-Z0-9]+"
+      description: >
+        The Ceph cluster name must be at least 1 character and contain only
+        letters and numbers.
+  CephClientUserName:
+    default: openstack
+    type: string
+  DockerCinderBackupLoggingSource:
+    type: json
+    default:
+      tag: openstack.cinder.backup
+      file: /var/log/containers/cinder/cinder-backup.log
+  CinderBackupBackend:
+    default: swift
+    description: The short name of the Cinder Backup backend to use.
+    type: string
+    constraints:
+    - allowed_values: ['swift', 'ceph', 'nfs']
+  CinderBackupRbdPoolName:
+    default: backups
+    type: string
+  CephClusterName:
+    type: string
+    default: ceph
+    description: The Ceph cluster name.
+    constraints:
+    - allowed_pattern: "[a-zA-Z0-9]+"
+      description: >
+        The Ceph cluster name must be at least 1 character and contain only
+        letters and numbers.
+  CephClientUserName:
+    default: openstack
+    type: string
+  CinderBackupNfsShare:
+    default: ''
+    description: NFS share to be mounted
+    type: string
+  CinderBackupNfsMountOptions:
+    default: ''
+    description: Mount options passed to the NFS client. See NFS man
+                 page for details.
+    type: string
+  MonitoringSubscriptionCinderBackup:
+    default: 'overcloud-cinder-backup'
+    type: string
+
+resources:
+
+  ContainersCommon:
+    type: ../containers-common.yaml
+
+  MySQLClient:
+    type: ../database/mysql-client.yaml
+
+  CinderBase:
+    type: ./cinder-base.yaml
+    properties:
+      EndpointMap: {get_param: EndpointMap}
+      ServiceData: {get_param: ServiceData}
+      ServiceNetMap: {get_param: ServiceNetMap}
+      DefaultPasswords: {get_param: DefaultPasswords}
+      RoleName: {get_param: RoleName}
+      RoleParameters: {get_param: RoleParameters}
+
+  CinderCommon:
+    type: ./cinder-common-container-puppet.yaml
+
+outputs:
+  role_data:
+    description: Role data for the Cinder Backup role.
+    value:
+      service_name: cinder_backup
+      monitoring_subscription: {get_param: MonitoringSubscriptionCinderBackup}
+      config_settings:
+        map_merge:
+          - get_attr: [CinderBase, role_data, config_settings]
+          - cinder::backup::ceph::backup_ceph_user: {get_param: CephClientUserName}
+            cinder::backup::ceph::backup_ceph_pool: {get_param: CinderBackupRbdPoolName}
+            cinder::backup::ceph::backup_ceph_conf:
+              list_join:
+              - ''
+              - - '/etc/ceph/'
+                - {get_param: CephClusterName}
+                - '.conf'
+            cinder::backup::swift::backup_swift_container: volumebackups
+            cinder::backup::nfs::backup_share: {get_param: CinderBackupNfsShare}
+            cinder::backup::nfs::backup_mount_options: {get_param: CinderBackupNfsMountOptions}
+      service_config_settings:
+        map_merge:
+          - get_attr: [CinderBase, role_data, service_config_settings]
+          - rsyslog:
+              tripleo_logging_sources_cinder_backup:
+                - {get_param: DockerCinderBackupLoggingSource}
+      # BEGIN DOCKER SETTINGS
+      puppet_config:
+        config_volume: cinder
+        puppet_tags: cinder_config,file,concat,file_line
+        step_config:
+          list_join:
+            - "\n"
+            - - {get_attr: [CinderBase, role_data, step_config]}
+              -
+                str_replace:
+                  template: "include ::tripleo::profile::base::cinder::backup::DRIVER"
+                  params:
+                    DRIVER: {get_param: CinderBackupBackend}
+              - {get_attr: [MySQLClient, role_data, step_config]}
+        config_image: {get_param: ContainerCinderConfigImage}
+      kolla_config:
+        /var/lib/kolla/config_files/cinder_backup.json:
+          command: /usr/bin/cinder-backup --config-file /usr/share/cinder/cinder-dist.conf --config-file /etc/cinder/cinder.conf
+          config_files:
+            - source: "/var/lib/kolla/config_files/src/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+            - source: "/var/lib/kolla/config_files/src-ceph/"
+              dest: "/etc/ceph/"
+              merge: true
+              preserve_properties: true
+            - source: "/var/lib/kolla/config_files/src-iscsid/*"
+              dest: "/etc/iscsi/"
+              merge: true
+              preserve_properties: true
+          permissions:
+            - path: /var/lib/cinder
+              owner: cinder:cinder
+              recurse: true
+            - path: /var/log/cinder
+              owner: cinder:cinder
+              recurse: true
+            - path:
+                str_replace:
+                  template: /etc/ceph/CLUSTER.client.USER.keyring
+                  params:
+                    CLUSTER: {get_param: CephClusterName}
+                    USER: {get_param: CephClientUserName}
+              owner: cinder:cinder
+              perm: '0600'
+      docker_config:
+        step_3:
+          cinder_backup_init_logs:
+            start_order: 0
+            image: &cinder_backup_image {get_param: ContainerCinderBackupImage}
+            net: none
+            privileged: false
+            user: root
+            volumes:
+              - /var/log/containers/cinder:/var/log/cinder:z
+            command: ['/bin/bash', '-c', 'chown -R cinder:cinder /var/log/cinder']
+        step_4:
+          cinder_backup:
+            image: *cinder_backup_image
+            net: host
+            privileged: true
+            restart: always
+            healthcheck: {get_attr: [ContainersCommon, healthcheck_rpc_port]}
+            volumes: {get_attr: [CinderCommon, cinder_backup_volumes]}
+            environment: {get_attr: [CinderCommon, cinder_backup_environment]}
+      host_prep_tasks:
+        list_concat:
+          - {get_attr: [CinderCommon, cinder_backup_host_prep_tasks]}
+          - - name: enable virt_sandbox_use_netlink for healthcheck
+              seboolean:
+                name: virt_sandbox_use_netlink
+                persistent: yes
+                state: yes

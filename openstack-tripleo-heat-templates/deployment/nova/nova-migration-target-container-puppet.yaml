@@ -1,0 +1,196 @@
+heat_template_version: rocky
+
+description: >
+  OpenStack containerized Nova Migration Target service
+
+parameters:
+  ContainerNovaComputeImage:
+    description: image
+    type: string
+  ContainerNovaLibvirtConfigImage:
+    description: The container image to use for the nova_libvirt config_volume
+    type: string
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  DockerNovaMigrationSshdPort:
+    default: 2022
+    description: Port that dockerized nova migration target sshd service
+                 binds to.
+    type: number
+  MigrationSshKey:
+    type: json
+    description: >
+      SSH key for migration.
+      Expects a dictionary with keys 'public_key' and 'private_key'.
+      Values should be identical to SSH public/private key files.
+    default:
+      public_key: ''
+      private_key: ''
+  MigrationSshPort:
+    default: 2022
+    description: Target port for migration over ssh
+    type: number
+  NovaNfsEnabled:
+    default: false
+    description: Whether to enable or not the NFS backend for Nova
+    type: boolean
+    tags:
+      - role_specific
+
+resources:
+
+  ContainersCommon:
+    type: ../containers-common.yaml
+
+  SshdBase:
+    type: ../../deployment/sshd/sshd-baremetal-puppet.yaml
+    properties:
+      EndpointMap: {get_param: EndpointMap}
+      ServiceNetMap: {get_param: ServiceNetMap}
+      DefaultPasswords: {get_param: DefaultPasswords}
+      RoleName: {get_param: RoleName}
+      RoleParameters: {get_param: RoleParameters}
+
+conditions:
+  nova_nfs_enabled:
+    or:
+      - and:
+        - equals: [{get_param: NovaNfsEnabled}, true]
+        - equals: [{get_param: [RoleParameters, NovaNfsEnabled]}, '']
+      - equals: [{get_param: [RoleParameters, NovaNfsEnabled]}, true]
+
+outputs:
+  role_data:
+    description: Role data for the Nova Migration Target service.
+    value:
+      service_name: nova_migration_target
+      config_settings:
+        map_merge:
+          - get_attr: [SshdBase, role_data, config_settings]
+          - tripleo::profile::base::nova::migration::target::ssh_authorized_keys:
+              - {get_param: [ MigrationSshKey, public_key ]}
+            tripleo::profile::base::nova::migration::target::ssh_localaddrs:
+              - "%{hiera('cold_migration_ssh_inbound_addr')}"
+              - "%{hiera('live_migration_ssh_inbound_addr')}"
+            live_migration_ssh_inbound_addr:
+              str_replace:
+                template:
+                  "%{hiera('$NETWORK')}"
+                params:
+                  $NETWORK:
+                    get_param:
+                      - ServiceNetMap
+                      - str_replace:
+                          template: "ROLENAMEHostnameResolveNetwork"
+                          params:
+                            ROLENAME: {get_param: RoleName}
+            cold_migration_ssh_inbound_addr:
+              str_replace:
+                template:
+                  "%{hiera('$NETWORK')}"
+                params:
+                  $NETWORK: {get_param: [ServiceNetMap, NovaApiNetwork]}
+            tripleo::profile::base::sshd::port:
+              - 22
+            tripleo::nova_migration_target::firewall_rules:
+              '113 nova_migration_target':
+                dport:
+                  - {get_param: MigrationSshPort}
+      puppet_config:
+        config_volume: nova_libvirt
+        step_config:
+          list_join:
+            - "\n"
+            - - get_attr: [SshdBase, role_data, step_config]
+              - include tripleo::profile::base::nova::migration::target
+        config_image: {get_param: ContainerNovaLibvirtConfigImage}
+      kolla_config:
+        /var/lib/kolla/config_files/nova-migration-target.json:
+          command:
+            str_replace:
+              template: "/usr/sbin/sshd -D -p SSHDPORT"
+              params:
+                SSHDPORT: {get_param: DockerNovaMigrationSshdPort}
+          config_files:
+            - source: "/var/lib/kolla/config_files/src/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+            - source: /host-ssh/ssh_host_*_key
+              dest: /etc/ssh/
+              owner: "root"
+              perm: "0600"
+      docker_config:
+        step_4:
+          nova_migration_target:
+            image: {get_param: ContainerNovaComputeImage}
+            net: host
+            privileged: true
+            user: root
+            restart: always
+            healthcheck:
+              test: /openstack/healthcheck
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/kolla/config_files/nova-migration-target.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/nova_libvirt/:/var/lib/kolla/config_files/src:ro
+                  - /etc/ssh/:/host-ssh/:ro
+                  - /run/libvirt:/run/libvirt
+                # podman fails to relable if nova_nfs_enabled where we have
+                # the nfs share mounted to /var/lib/nova/instances
+                -
+                  if:
+                  - nova_nfs_enabled
+                  - - /var/lib/nova:/var/lib/nova:shared
+                  - - /var/lib/nova:/var/lib/nova:shared,z
+            environment:
+              KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+      deploy_steps_tasks:
+        - name: validate nova migration target container state
+          when:
+            - container_cli == 'podman'
+            - not container_healthcheck_disabled
+            - step|int == 5
+          tags:
+            - opendev-validation
+            - opendev-validation-nova
+          block:
+            - name: Get nova-migration-target healthcheck status
+              register: nova_migration_target_healthcheck_state
+              systemd:
+                name: tripleo_nova_migration_target_healthcheck
+              retries: 10
+              delay: 30
+              until: nova_migration_target_healthcheck_state.status.ExecMainPID != '0' and
+                nova_migration_target_healthcheck_state.status.ActiveState in ['inactive', 'failed']
+              ignore_errors: yes
+            - name: Fail if nova-migration-target healthcheck report failed status
+              fail:
+                msg: nova-migration-target isn't working (healtcheck failed)
+              when: nova_migration_target_healthcheck_state.status.ExecMainStatus != '0'

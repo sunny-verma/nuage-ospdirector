@@ -1,0 +1,123 @@
+heat_template_version: rocky
+
+description: >
+  OpenStack containerized Iscsid service
+
+parameters:
+  ContainerIscsidImage:
+    description: image
+    type: string
+  ContainerIscsidConfigImage:
+    description: The container image to use for the iscsid config_volume
+    type: string
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+
+resources:
+
+  ContainersCommon:
+    type: ../containers-common.yaml
+
+outputs:
+  role_data:
+    description: Role data for the Iscsid role.
+    value:
+      service_name: iscsid
+      config_settings: {}
+      service_config_settings: {}
+      # BEGIN DOCKER SETTINGS
+      puppet_config:
+        config_volume: iscsid
+        puppet_tags: iscsid_config
+        step_config: |
+          include ::tripleo::profile::base::iscsid
+        config_image: {get_param: ContainerIscsidConfigImage}
+        volumes:
+          # NOTE(bogdando) Containerized or running on baremetal services
+          # on a node must use the same iSCSI Qualified Name (IQN).
+          # However, overcloud nodes must have a unique IQN. Allow full
+          # (write) access to /etc/iscsi so that puppet ensures the IQN
+          # is unique and is reset once, and only once.
+          - /etc/iscsi:/etc/iscsi:z
+      kolla_config:
+        /var/lib/kolla/config_files/iscsid.json:
+          command: /usr/sbin/iscsid -f
+          config_files:
+            - source: "/var/lib/kolla/config_files/src-iscsid/*"
+              dest: "/etc/iscsi/"
+              merge: true
+              preserve_properties: true
+      docker_config:
+        step_3:
+          iscsid:
+            start_order: 2
+            image: {get_param: ContainerIscsidImage}
+            net: host
+            privileged: true
+            restart: always
+            healthcheck:
+              test: /openstack/healthcheck
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/kolla/config_files/iscsid.json:/var/lib/kolla/config_files/config.json:ro
+                  - /dev/:/dev/
+                  - /run/:/run/
+                  - /sys:/sys
+                  - /lib/modules:/lib/modules:ro
+                  - /etc/iscsi:/var/lib/kolla/config_files/src-iscsid:ro
+                  - /var/lib/iscsi:/var/lib/iscsi:z
+            environment:
+              KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+      host_prep_tasks:
+        - name: ensure /etc/iscsi exists
+          file:
+            path: /etc/iscsi
+            state: directory
+            setype: svirt_sandbox_file_t
+        - name: ensure /var/lib/iscsi exists
+          file:
+            path: /var/lib/iscsi
+            state: directory
+            setype: svirt_sandbox_file_t
+        - name: stat /lib/systemd/system/iscsid.socket
+          stat: path=/lib/systemd/system/iscsid.socket
+          register: stat_iscsid_socket
+        - name: Stop and disable iscsid.socket service
+          service: name=iscsid.socket state=stopped enabled=no
+          when: stat_iscsid_socket.stat.exists
+        - name: Check if iscsi.service is enabled
+          command: systemctl is-enabled --quiet iscsi.service
+          ignore_errors: True
+          register: iscsi_service_enabled_result
+        - name: Stop iscsi.service
+          service: name=iscsi.service state=stopped enabled=no
+          when:
+            - iscsi_service_enabled_result is changed
+            - iscsi_service_enabled_result.rc == 0
+      upgrade_tasks: []

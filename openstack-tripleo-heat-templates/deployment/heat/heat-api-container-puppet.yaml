@@ -1,0 +1,310 @@
+heat_template_version: rocky
+
+description: >
+  OpenStack containerized Heat API service
+
+parameters:
+  ContainerHeatApiImage:
+    description: image
+    type: string
+  # puppet needs the heat-wsgi-api binary from centos-binary-heat-api
+  ContainerHeatApiConfigImage:
+    description: The container image to use for the heat_api config_volume
+    type: string
+  HeatApiLoggingSource:
+    type: json
+    default:
+      tag: openstack.heat.api
+      file: /var/log/containers/heat/heat_api.log
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  EnableInternalTLS:
+    type: boolean
+    default: false
+  HeatApiOptVolumes:
+    default: []
+    description: list of optional volumes to be mounted
+    type: comma_delimited_list
+  HeatApiOptEnvVars:
+    default: {}
+    description: hash of optional environment variables
+    type: json
+  HeatWorkers:
+    default: 0
+    description: Number of workers for Heat service.
+    type: number
+  HeatPassword:
+    description: The password for the Heat service and db account, used by the Heat services.
+    type: string
+    hidden: true
+  KeystoneRegion:
+    type: string
+    default: 'regionOne'
+    description: Keystone region for endpoint
+  MonitoringSubscriptionHeatApi:
+    default: 'overcloud-heat-api'
+    type: string
+  HeatApiPolicies:
+    description: |
+      A hash of policies to configure for Heat API.
+      e.g. { heat-context_is_admin: { key: context_is_admin, value: 'role:admin' } }
+    default: {}
+    type: json
+
+conditions:
+
+  internal_tls_enabled: {equals: [{get_param: EnableInternalTLS}, true]}
+  heat_workers_zero: {equals : [{get_param: HeatWorkers}, 0]}
+
+resources:
+
+  ContainersCommon:
+    type: ../containers-common.yaml
+
+  ApacheServiceBase:
+    type: ../../deployment/apache/apache-baremetal-puppet.yaml
+    properties:
+      ServiceData: {get_param: ServiceData}
+      ServiceNetMap: {get_param: ServiceNetMap}
+      DefaultPasswords: {get_param: DefaultPasswords}
+      EndpointMap: {get_param: EndpointMap}
+      RoleName: {get_param: RoleName}
+      RoleParameters: {get_param: RoleParameters}
+      EnableInternalTLS: {get_param: EnableInternalTLS}
+
+  HeatBase:
+    type: ./heat-base-puppet.yaml
+    properties:
+      EndpointMap: {get_param: EndpointMap}
+      ServiceData: {get_param: ServiceData}
+      ServiceNetMap: {get_param: ServiceNetMap}
+      DefaultPasswords: {get_param: DefaultPasswords}
+      RoleName: {get_param: RoleName}
+      RoleParameters: {get_param: RoleParameters}
+
+  HeatApiLogging:
+    type: OS::TripleO::Services::Logging::HeatApi
+
+outputs:
+  role_data:
+    description: Role data for the Heat API role.
+    value:
+      service_name: heat_api
+      monitoring_subscription: {get_param: MonitoringSubscriptionHeatApi}
+      config_settings:
+        map_merge:
+          - get_attr: [HeatBase, role_data, config_settings]
+          - get_attr: [HeatApiLogging, config_settings]
+          - get_attr: [ApacheServiceBase, role_data, config_settings]
+          - apache::default_vhost: false
+            tripleo::heat_api::firewall_rules:
+              '125 heat_api':
+                dport:
+                  - 8004
+                  - 13004
+            heat::api::bind_host:
+              str_replace:
+                template:
+                  "%{hiera('$NETWORK')}"
+                params:
+                  $NETWORK: {get_param: [ServiceNetMap, HeatApiNetwork]}
+            heat::wsgi::apache_api::ssl: {get_param: EnableInternalTLS}
+            heat::wsgi::apache_api::vhost_custom_fragment: 'Timeout 600'
+            heat::policy::policies: {get_param: HeatApiPolicies}
+            heat::api::service_name: 'httpd'
+            # NOTE: bind IP is found in hiera replacing the network name with the local node IP
+            # for the given network; replacement examples (eg. for internal_api):
+            # internal_api -> IP
+            # internal_api_uri -> [IP]
+            # internal_api_subnet - > IP/CIDR
+            heat::wsgi::apache_api::bind_host:
+             str_replace:
+                template:
+                  "%{hiera('$NETWORK')}"
+                params:
+                  $NETWORK: {get_param: [ServiceNetMap, HeatApiNetwork]}
+            heat::wsgi::apache_api::servername:
+              str_replace:
+                template:
+                  "%{hiera('fqdn_$NETWORK')}"
+                params:
+                  $NETWORK: {get_param: [ServiceNetMap, HeatApiNetwork]}
+          -
+            if:
+            - heat_workers_zero
+            - {}
+            - heat::wsgi::apache_api::workers: {get_param: HeatWorkers}
+      service_config_settings:
+        rsyslog:
+          tripleo_logging_sources_heat_api:
+            - {get_param: HeatApiLoggingSource}
+        keystone:
+          map_merge:
+            - get_attr: [HeatBase, role_data, service_config_settings, keystone]
+            - heat::keystone::auth::tenant: 'service'
+              heat::keystone::auth::public_url: {get_param: [EndpointMap, HeatPublic, uri]}
+              heat::keystone::auth::internal_url: {get_param: [EndpointMap, HeatInternal, uri]}
+              heat::keystone::auth::admin_url: {get_param: [EndpointMap, HeatAdmin, uri]}
+              heat::keystone::auth::password: {get_param: HeatPassword}
+              heat::keystone::auth::region: {get_param: KeystoneRegion}
+      # BEGIN DOCKER SETTINGS
+      puppet_config:
+        config_volume: heat_api
+        puppet_tags: heat_config,file,concat,file_line
+        step_config: |
+          include ::tripleo::profile::base::heat::api
+        config_image: {get_param: ContainerHeatApiConfigImage}
+      kolla_config:
+        /var/lib/kolla/config_files/heat_api.json:
+          command: /usr/sbin/httpd -DFOREGROUND
+          config_files:
+            - source: "/var/lib/kolla/config_files/src/etc/httpd/conf.d"
+              dest: "/etc/httpd/conf.d"
+              merge: false
+              preserve_properties: true
+            - source: "/var/lib/kolla/config_files/src/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+          permissions:
+            - path: /var/log/heat
+              owner: heat:heat
+              recurse: true
+        /var/lib/kolla/config_files/heat_api_cron.json:
+          command: /usr/sbin/crond -n
+          config_files:
+            - source: "/var/lib/kolla/config_files/src/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+          permissions:
+            - path: /var/log/heat
+              owner: heat:heat
+              recurse: true
+      docker_config:
+        step_2:
+          get_attr: [HeatApiLogging, docker_config, step_2]
+        step_4:
+          heat_api:
+            image: {get_param: ContainerHeatApiImage}
+            net: host
+            privileged: false
+            restart: always
+            # NOTE(mandre) kolla image changes the user to 'heat', we need it
+            # to be root to run httpd
+            user: root
+            healthcheck:
+              test: /openstack/healthcheck
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                - {get_attr: [HeatApiLogging, volumes]}
+                - {get_param: HeatApiOptVolumes}
+                -
+                  - /var/lib/kolla/config_files/heat_api.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/heat_api/:/var/lib/kolla/config_files/src:ro
+                  -
+                    if:
+                      - internal_tls_enabled
+                      - /etc/pki/tls/certs/httpd:/etc/pki/tls/certs/httpd:ro
+                      - ''
+                  -
+                    if:
+                      - internal_tls_enabled
+                      - /etc/pki/tls/private/httpd:/etc/pki/tls/private/httpd:ro
+                      - ''
+            environment:
+              map_merge:
+                - {get_param: HeatApiOptEnvVars}
+                - KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+          heat_api_cron:
+            image: {get_param: ContainerHeatApiImage}
+            net: host
+            user: root
+            privileged: false
+            restart: always
+            healthcheck:
+              test: '/usr/share/openstack-tripleo-common/healthcheck/cron heat'
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                - {get_attr: [HeatApiLogging, volumes]}
+                -
+                  - /var/lib/kolla/config_files/heat_api_cron.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/heat_api/:/var/lib/kolla/config_files/src:ro
+            environment:
+              KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+      host_prep_tasks: {get_attr: [HeatApiLogging, host_prep_tasks]}
+      upgrade_tasks: []
+      metadata_settings:
+        get_attr: [ApacheServiceBase, role_data, metadata_settings]
+      external_upgrade_tasks:
+        - when:
+            - step|int == 1
+          tags:
+            - never
+            - system_upgrade_transfer_data
+            - system_upgrade_stop_services
+          block:
+            - name: Stop heat api container
+              import_role:
+                name: tripleo-container-stop
+              vars:
+                tripleo_containers_to_stop:
+                  - heat_api
+                  - heat_api_cron
+                tripleo_delegate_to: "{{ groups['heat_api'] | default([]) }}"
+      fast_forward_upgrade_tasks:
+        - when:
+            - step|int == 0
+            - release == 'rocky'
+          block:
+            - name: FFU check openstack-heat-api is enabled
+              command: systemctl is-enabled openstack-heat-api
+              ignore_errors: True
+              register: heat_api_enabled_result
+            - name: Set fact heat_api_enabled
+              set_fact:
+                heat_api_enabled: "{{ heat_api_enabled_result.rc == 0 }}"
+        - name: FFU stop and disable openstack-heat-api
+          service: name=openstack-heat-api state=stopped enabled=no
+          when:
+            - step|int == 1
+            - release == 'rocky'
+            - heat_api_enabled|bool
+        - name: FFU Heat package update
+          package:
+            name: 'openstack-heat*'
+            state: latest
+          when:
+            - step|int == 6
+            - is_bootstrap_node|bool
+        - name: FFU Heat db-sync
+          command: heat-manage db_sync
+          when:
+            - step|int == 8
+            - is_bootstrap_node|bool

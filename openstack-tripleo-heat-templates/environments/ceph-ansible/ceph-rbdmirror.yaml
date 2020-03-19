@@ -1,0 +1,2 @@
+resource_registry:
+  OS::TripleO::Services::CephRbdMirror: ../../deployment/ceph-ansible/ceph-rbdmirror.yaml
