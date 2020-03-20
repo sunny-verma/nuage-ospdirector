@@ -1,7 +1,8 @@
-heat_template_version: queens
+heat_template_version: rocky
 
 description: >
   OpenStack containerized Neutron ML2 Plugin Nuage configured with Puppet
+
 parameters:
   EndpointMap:
     default: {}
@@ -18,6 +19,9 @@ parameters:
                  via parameter_defaults in the resource registry.  This
                  mapping overrides those in ServiceNetMapDefaults.
     type: json
+  ContainerNeutronConfigImage:
+    description: The container image to use for the neutron config_volume
+    type: string
   DefaultPasswords:
     type: json
   RoleName:
@@ -41,8 +45,8 @@ resources:
       RoleName: {get_param: RoleName}
       RoleParameters: {get_param: RoleParameters}
 
-  NeutronDockerBase:
-    type: /usr/share/openstack-tripleo-heat-templates/docker/services/neutron-plugin-ml2.yaml
+  NeutronContainerBase:
+    type: /usr/share/openstack-tripleo-heat-templates/deployment/neutron/neutron-plugin-ml2-container-puppet.yaml
     properties:
       EndpointMap: {get_param: EndpointMap}
       ServiceData: {get_param: ServiceData}
@@ -55,16 +59,11 @@ outputs:
   role_data:
     description: Role data for the Neutron ML2 Plugin Nuage role.
     value:
-      service_name: {get_attr: [NeutronBase, role_data, service_name]}
-      config_settings:
-        map_merge:
-          - get_attr: [NeutronBase, role_data, config_settings]
-      logging_source: {get_attr: [NeutronBase, role_data, logging_source]}
-      logging_groups: {get_attr: [NeutronBase, role_data, logging_groups]}
-      service_config_settings: {get_attr: [NeutronBase, role_data, service_config_settings]}
-      metadata_settings:
-        get_attr: [NeutronBase, role_data, metadata_settings]
-      puppet_config: {get_attr: [NeutronDockerBase, role_data, puppet_config]}
+      service_name: {get_attr: [NeutronContainerBase, role_data, service_name]}
+      config_settings: get_attr: [NeutronContainerBase, role_data, config_settings]
+      service_config_settings: {get_attr: [NeutronContainerBase, role_data, service_config_settings]}
+      metadata_settings: {get_attr: [NeutronContainerBase, role_data, metadata_settings]}
+      puppet_config: {get_attr: [NeutronContainerBase, role_data, puppet_config]}
       kolla_config: {}
       docker_config: {}
       host_prep_tasks: {get_attr: [NeutronBase, role_data, host_prep_tasks]}

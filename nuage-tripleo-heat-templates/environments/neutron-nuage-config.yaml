@@ -1,16 +1,5 @@
 # A Heat environment file which can be used to enable a
 # a Neutron Nuage backend on the controller, configured via puppet
-resource_registry:
-  OS::TripleO::Services::NeutronDhcpAgent: OS::Heat::None
-  OS::TripleO::Services::NeutronL3Agent: OS::Heat::None
-  OS::TripleO::Services::NeutronMetadataAgent: OS::Heat::None
-  OS::TripleO::Services::NeutronOvsAgent: OS::Heat::None
-  OS::TripleO::Services::ComputeNeutronOvsAgent: OS::Heat::None
-
-  # Override the NeutronMl2PluginBase to use Nuage inside Docker container
-  OS::TripleO::Docker::NeutronMl2PluginBase: ../puppet/services/neutron-plugin-ml2-nuage.yaml
-  OS::TripleO::Services::NeutronCorePlugin: ../docker/services/neutron-plugin-ml2-nuage.yaml
-
 parameter_defaults:
   NeutronNuageNetPartitionName: 'default_name'
   NeutronNuageVSDIp: '0.0.0.0:0'
