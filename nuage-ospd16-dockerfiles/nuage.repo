@@ -1,7 +1,0 @@
-[Nuage]
-name=nuage
-#baseurl=https://s3-us-west-1.amazonaws.com/nuage-public-mirror/574d63bb0727c27e014d8f27ccc275c3f9641b955e8aa7659d74e4df9cf7847a/6.0.5/queens
-baseurl=http://172.22.61.22/6.0.5/train/el8/
-enabled=1
-gpgcheck=0
-gpgkey=file:///tmp/RPM-GPG-KEY-Nuage

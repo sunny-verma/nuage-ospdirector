@@ -3,13 +3,6 @@
 # required
 ImageName: "overcloud-full.qcow2"
 
-# Nuage Major Version
-# type: string
-# required  (Please choose one of them)
-# "5.0" --> For Nuage 5.0 Deployments
-# "6.0" --> For Nuage 6.0 Deployments
-NuageMajorVersion: "6.0"
-
 # DeploymentType for your Deployment
 # type: string
 # required ( Please choose one of them )
@@ -59,37 +52,6 @@ RpmPublicKey: []
 # required
 # Note: Make sure to place repo file in the same folder as "nuage_overcloud_full_patch.py"
 RepoFile: ''
-
-# Name for the repo hosting the Nuage O/VRS RPMs
-# type:  list
-# required only for NuageMajorVersion: "5.0"
-# Eg:  ["vrs_repo_name1", "vrs_repo_name2"]
-VRSRepoNames: []
-
-# Name for the repo hosting the Nuage AVRS RPMs 
-# type: list
-# required only when DeploymentType: ["avrs"] and NuageMajorVersion: "5.0"
-# Eg:  ["avrs_repo_name1", "avrs_repo_name2"]
-AVRSRepoNames: []
-
-# Name for the repo hosting the nuage-ovrs, mellanox and os-net-config RPMs
-# type: list
-# required only when DeploymentType: ["ovrs"] and NuageMajorVersion: "5.0"
-# Eg:  ["ovrs_repo_name", "mlnx_repo_name"]
-OvrsRepoNames: []
-
-# Name for the repo hosting the Kernel RPMs
-# type: list
-# required only when DeploymentType: ["ovrs"] and NuageMajorVersion: "5.0"
-# Eg:  ["rh_kernel_repo_name1", "rh_kernel_repo_name2"]
-KernelRepoNames: []
-
-# To install Kernel Hot Fix or not and defaults to False.
-# When this is set to True, KernelRepoNames can't be empty.
-# type: boolean
-# required only when DeploymentType: ["ovrs"] and NuageMajorVersion: "5.0"
-# Eg: KernelHF: True
-KernelHF: False
 
 # Log file name
 # type: string

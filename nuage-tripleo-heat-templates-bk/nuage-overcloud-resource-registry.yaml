@@ -1,0 +1,12 @@
+resource_registry:
+  # Controller
+  OS::TripleO::Services::OVNDBs: OS::Heat::None
+  OS::TripleO::Services::OVNController: OS::Heat::None
+  # Override the NeutronMl2PluginBase to use Nuage inside Docker container
+  OS::TripleO::Docker::NeutronMl2PluginBase: deployment/neutron/neutron-plugin-ml2-nuage.yaml
+  OS::TripleO::Services::NeutronCorePlugin: deployment/neutron/neutron-plugin-ml2-nuage-container-puppet.yaml
+
+  # Compute
+  OS::TripleO::Services::ComputeNeutronCorePlugin: deployment/nova/nuage-compute-vrs.yaml
+  OS::TripleO::Services::OVNMetadataAgent:  OS::Heat::None
+

@@ -51,7 +51,7 @@ parameter_defaults:
     modify_append_tag: "-nuage"
     modify_vars:
       tasks_from: modify_image.yml
-      modify_dir_path: /home/stack/nuage-ospdirector/nuage-ospd16-dockerfileshorizon
+      modify_dir_path: nuage-ospd16-dockerfiles/horizon
 
   - push_destination: true
     includes:
@@ -60,7 +60,7 @@ parameter_defaults:
     modify_append_tag: "-nuage"
     modify_vars:
       tasks_from: modify_image.yml
-      modify_dir_path: /home/stack/nuage-ospdirector/nuage-ospd16-dockerfilesneutron-server
+      modify_dir_path: nuage-ospd16-dockerfiles/neutron-server
 
   - push_destination: true
     includes:
@@ -69,7 +69,7 @@ parameter_defaults:
     modify_append_tag: "-nuage"
     modify_vars:
       tasks_from: modify_image.yml
-      modify_dir_path: /home/stack/nuage-ospdirector/nuage-ospd16-dockerfilesheat-engine
+      modify_dir_path: nuage-ospd16-dockerfiles/heat-engine
 
   - push_destination: true
     includes:
@@ -78,7 +78,7 @@ parameter_defaults:
     modify_append_tag: "-nuage"
     modify_vars:
       tasks_from: modify_image.yml
-      modify_dir_path: /home/stack/nuage-ospdirector/nuage-ospd16-dockerfilesheat-api-cfn
+      modify_dir_path: nuage-ospd16-dockerfiles/heat-api-cfn
 
   - push_destination: true
     includes:
@@ -87,7 +87,7 @@ parameter_defaults:
     modify_append_tag: "-nuage"
     modify_vars:
       tasks_from: modify_image.yml
-      modify_dir_path: /home/stack/nuage-ospdirector/nuage-ospd16-dockerfilesheat-api
+      modify_dir_path: nuage-ospd16-dockerfiles/heat-api
 
   - push_destination: true
     includes:
@@ -96,5 +96,5 @@ parameter_defaults:
     modify_append_tag: "-nuage"
     modify_vars:
       tasks_from: modify_image.yml
-      modify_dir_path: /home/stack/nuage-ospdirector/nuage-ospd16-dockerfilesnova-compute
+      modify_dir_path: nuage-ospd16-dockerfiles/nova-compute
 

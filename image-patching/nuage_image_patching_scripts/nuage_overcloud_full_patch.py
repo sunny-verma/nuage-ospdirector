@@ -61,25 +61,9 @@ rhel_subs_type = ''
 
 
 #####
-# Decorator function to enable and disable repos for
-# NuageMajorVersion "5.0" and skip it for "6.0"
-#####
-
-
-def repos_decorator(func):
-    def repos_wrapper():
-        install_cmds = func()
-        full_cmds = install_cmds
-        write_to_file(constants.SCRIPT_NAME, full_cmds)
-        write_to_file(constants.SCRIPT_NAME, '\n')
-    return repos_wrapper
-
-
-#####
 # Function to install Nuage packages that are required
 #####
 
-@repos_decorator
 def install_nuage_packages():
 
     cmds = '''
