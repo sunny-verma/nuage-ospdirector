@@ -1,7 +1,7 @@
 # Heat environment file which can be used to enable
 # Nuage backend on the compute, configured via puppet
 parameter_defaults:
-  NuageActiveController: '192.168.24.120'
+  NuageActiveController: '192.168.24.121'
   NuageStandbyController: '0.0.0.0'
   NuageBridgeMTU: '9000'
   NovaIPv6: 'True'

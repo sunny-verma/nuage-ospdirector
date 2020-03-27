@@ -68,6 +68,10 @@ def install_nuage_packages():
 
     cmds = '''
 #### Installing Nuage Packages
+# todo(sunny): remove below
+sudo sed -i 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/sysconfig/selinux
+yum install --setopt=skip_missing_names_on_install=False -y  python2-setproctitle
+
 yum install --setopt=skip_missing_names_on_install=False -y %s
 yum install --setopt=skip_missing_names_on_install=False -y %s
 yum install --setopt=skip_missing_names_on_install=False -y %s

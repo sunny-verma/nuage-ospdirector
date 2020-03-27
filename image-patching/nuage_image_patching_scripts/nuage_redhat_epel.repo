@@ -1,0 +1,78 @@
+[Nuage]
+name=nuage
+baseurl=http://172.22.61.22/6.0.5/train/el8/
+enabled=1
+gpgcheck=0
+gpgkey=file:///tmp/RPM-GPG-KEY-Nuage
+
+[RHEL-8-appstream-partners]
+name=RHEL-8-appstream-partners
+baseurl=http://delorean.nuagedemo.net/mirrors/RHEL-8.2.0-Beta-1.0/AppStream/$basearch/os
+gpgcheck=0
+enabled=1
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+metadata_expire = 86400
+[RHEL-8-baseos-partners]
+name=RHEL-8-baseos-partners
+baseurl=http://delorean.nuagedemo.net/mirrors/RHEL-8.2.0-Beta-1.0/BaseOS/$basearch/os
+gpgcheck=0
+enabled=1
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+[RHEL-8-crb-partners]
+name=RHEL-8-crb-partners
+baseurl=http://delorean.nuagedemo.net/mirrors/RHEL-8.2.0-Beta-1.0/CRB/$basearch/os
+gpgcheck=0
+enabled=1
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+[RHEL-8-highavailability-partners]
+name=RHEL-8-highavailability-partners
+baseurl=http://delorean.nuagedemo.net/mirrors/RHEL-8.2.0-Beta-1.0/HighAvailability/$basearch/os
+gpgcheck=0
+enabled_metadata = 0
+enabled=1
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+[RHEL-8-resilientstorage-partners]
+name=RHEL-8-resilientstorage-partners
+baseurl=http://delorean.nuagedemo.net/mirrors/RHEL-8.2.0-Beta-1.0/ResilientStorage/$basearch/os
+gpgcheck=0
+enabled_metadata = 0
+enabled=1
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+[RHEL-8-rt-partners]
+name=RHEL-8-rt-partners
+baseurl=http://delorean.nuagedemo.net/mirrors/RHEL-8.2.0-Beta-1.0/RT/$basearch/os
+gpgcheck=0
+enabled=1
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+
+[epel]
+name=Extra Packages for Enterprise Linux $releasever - $basearch
+#baseurl=https://download.fedoraproject.org/pub/epel/$releasever/Everything/$basearch
+metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-$releasever&arch=$basearch&infra=$infra&content=$contentdir
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[epel-debuginfo]
+name=Extra Packages for Enterprise Linux $releasever - $basearch - Debug
+#baseurl=https://download.fedoraproject.org/pub/epel/$releasever/Everything/$basearch/debug
+metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-debug-$releasever&arch=$basearch&infra=$infra&content=$contentdir
+enabled=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+gpgcheck=0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+
+[epel-source]
+name=Extra Packages for Enterprise Linux $releasever - $basearch - Source
+#baseurl=https://download.fedoraproject.org/pub/epel/$releasever/Everything/SRPMS
+metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-source-$releasever&arch=$basearch&infra=$infra&content=$contentdir
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+gpgcheck=0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
