@@ -1,0 +1,4 @@
+FROM undercloud16.ctlplane.localdomain:8787/rhosp-rhel8/openstack-horizon:16.0
+LABEL modified_append_tag=-nuage
+
+RUN touch /opt/nuage-nova

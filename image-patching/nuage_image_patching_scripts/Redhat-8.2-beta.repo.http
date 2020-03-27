@@ -1,0 +1,43 @@
+[RHEL-8-appstream-partners]
+name=RHEL-8-appstream-partners
+baseurl=http://delorean.nuagedemo.net/mirrors/RHEL-8.2.0-Beta-1.0/AppStream/$basearch/os
+gpgcheck=0
+enabled=1
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+metadata_expire = 86400
+[RHEL-8-baseos-partners]
+name=RHEL-8-baseos-partners
+baseurl=http://delorean.nuagedemo.net/mirrors/RHEL-8.2.0-Beta-1.0/BaseOS/$basearch/os
+gpgcheck=0
+enabled=1
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+[RHEL-8-crb-partners]
+name=RHEL-8-crb-partners
+baseurl=http://delorean.nuagedemo.net/mirrors/RHEL-8.2.0-Beta-1.0/CRB/$basearch/os
+gpgcheck=0
+enabled=1
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+[RHEL-8-highavailability-partners]
+name=RHEL-8-highavailability-partners
+baseurl=http://delorean.nuagedemo.net/mirrors/RHEL-8.2.0-Beta-1.0/HighAvailability/$basearch/os
+gpgcheck=0
+enabled_metadata = 0
+enabled=1
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+[RHEL-8-resilientstorage-partners]
+name=RHEL-8-resilientstorage-partners
+baseurl=http://delorean.nuagedemo.net/mirrors/RHEL-8.2.0-Beta-1.0/ResilientStorage/$basearch/os
+gpgcheck=0
+enabled_metadata = 0
+enabled=1
+proxy = http://proxy.lbs.alcatel-lucent.com:8000
+[RHEL-8-rt-partners]
+name=RHEL-8-rt-partners
+baseurl=http://delorean.nuagedemo.net/mirrors/RHEL-8.2.0-Beta-1.0/RT/$basearch/os
+gpgcheck=0
+enabled=1
+enabled_metadata = 0
+proxy = http://proxy.lbs.alcatel-lucent.com:8000

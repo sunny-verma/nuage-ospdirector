@@ -1,0 +1,221 @@
+heat_template_version: rocky
+
+description: >
+  OpenStack containerized Memcached services
+
+parameters:
+  ContainerMemcachedImage:
+    description: image
+    type: string
+  ContainerMemcachedConfigImage:
+    description: The container image to use for the memcached config_volume
+    type: string
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  MemcachedMaxMemory:
+    default: '50%'
+    description: The maximum amount of memory for memcached to be configured
+                 to use when installed. This can be either a percentage ('50%')
+                 or a fixed value ('2048').
+    type: string
+  MonitoringSubscriptionMemcached:
+    default: 'overcloud-memcached'
+    type: string
+  Debug:
+    default: false
+    description: Set to True to enable debugging on all services.
+    type: boolean
+  MemcachedDebug:
+    default: ''
+    description: Set to True to enable debugging Memcached service.
+    type: string
+    constraints:
+      - allowed_values: [ '', 'true', 'True', 'TRUE', 'false', 'False', 'FALSE']
+  MemcachedIpSubnet:
+    default: ''
+    description: IP address/subnet on the memcached network. If empty (default), MemcachedNetwork
+                 will be taken. Useful in the case where an operator wants to open Memcached outside
+                 of the internal network. Use this parameter with caution and be aware of
+                 opening memcached to external network can be dangerous.
+    type: string
+
+conditions:
+  memcached_network_unset: {equals : [{get_param: MemcachedIpSubnet}, '']}
+  service_debug:
+    or:
+      - equals: [{get_param: MemcachedDebug}, 'true']
+      - equals: [{get_param: MemcachedDebug}, 'True']
+      - equals: [{get_param: Debug}, true]
+
+resources:
+
+  ContainersCommon:
+    type: ../containers-common.yaml
+
+outputs:
+  role_data:
+    description: Role data for the Memcached API role.
+    value:
+      service_name: memcached
+      monitoring_subscription: {get_param: MonitoringSubscriptionMemcached}
+      config_settings:
+        # NOTE: bind IP is found in hiera replacing the network name with the local node IP
+        # for the given network; replacement examples (eg. for internal_api):
+        # internal_api -> IP
+        # internal_api_uri -> [IP]
+        # internal_api_subnet - > IP/CIDR
+        memcached::listen_ip:
+          str_replace:
+            template:
+              "%{hiera('$NETWORK')}"
+            params:
+              $NETWORK: {get_param: [ServiceNetMap, MemcachedNetwork]}
+        memcached::listen_ip_uri:
+          str_replace:
+            template:
+              "%{hiera('$NETWORK_uri')}"
+            params:
+              $NETWORK: {get_param: [ServiceNetMap, MemcachedNetwork]}
+        memcached::max_memory: {get_param: MemcachedMaxMemory}
+        # https://access.redhat.com/security/cve/cve-2018-1000115
+        # Only accept TCP to avoid spoofed traffic amplification DoS on UDP.
+        memcached::udp_port: 0
+        memcached::verbosity:
+          list_join:
+            - ''
+            - - 'v'
+              - if:
+                - service_debug
+                - 'v'
+                - ''
+        memcached::disable_cachedump: true
+        tripleo::memcached::firewall_rules:
+          # https://access.redhat.com/security/cve/cve-2018-1000115
+          # Only accept TCP to avoid spoofed traffic amplification DoS on UDP.
+          # Memcached traffic shouldn't be open on the internet.
+          # Even if binding is configured on internal_api network, enforce it
+          # via firewall as well.
+          if:
+            - memcached_network_unset
+            - map_merge:
+                repeat:
+                  for_each:
+                    <%net_cidr%>:
+                      get_param:
+                        - ServiceData
+                        - net_cidr_map
+                        - {get_param: [ServiceNetMap, MemcachedNetwork]}
+                  template:
+                    '121 memcached <%net_cidr%>':
+                      dport: 11211
+                      proto: 'tcp'
+                      source: <%net_cidr%>
+            - '121 memcached':
+                dport: 11211
+                proto: 'tcp'
+                source: {get_param: MemcachedIpSubnet}
+      service_config_settings:
+        collectd:
+            tripleo.collectd.plugins.memcached:
+              - memcached
+            collectd::plugin::memcached::instances:
+              local:
+                host: "%{hiera('memcached::listen_ip')}"
+                port: 11211
+      # BEGIN DOCKER SETTINGS
+      puppet_config:
+        config_volume: 'memcached'
+        puppet_tags: 'file'
+        step_config: |
+            include ::tripleo::profile::base::memcached
+        config_image: {get_param: ContainerMemcachedConfigImage}
+      kolla_config: {}
+      docker_config:
+        step_1:
+          memcached:
+            start_order: 0
+            image: {get_param: ContainerMemcachedImage}
+            net: host
+            privileged: false
+            restart: always
+            healthcheck:
+              test: /openstack/healthcheck
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/config-data/memcached/etc/sysconfig/memcached:/etc/sysconfig/memcached:ro
+            command: ['/bin/bash', '-c', 'source /etc/sysconfig/memcached; /usr/bin/memcached -p ${PORT} -u ${USER} -m ${CACHESIZE} -c ${MAXCONN} $OPTIONS']
+      host_prep_tasks:
+        - name: create persistent directories
+          file:
+            path: "{{ item.path }}"
+            state: directory
+            setype: "{{ item.setype }}"
+          with_items:
+            - { 'path': /var/log/memcached, 'setype': svirt_sandbox_file_t }
+        - name: memcached logs readme
+          copy:
+            dest: /var/log/memcached/readme.txt
+            content: |
+              Memcached container logs to stdout/stderr only.
+          ignore_errors: true
+      upgrade_tasks: []
+      external_upgrade_tasks:
+        - when:
+            - step|int == 1
+          tags:
+            - never
+            - system_upgrade_transfer_data
+            - system_upgrade_stop_services
+          block:
+            - name: Stop memcached container
+              import_role:
+                name: tripleo-container-stop
+              vars:
+                tripleo_containers_to_stop:
+                  - memcached
+                tripleo_delegate_to: "{{ groups['memcached'] | default([]) }}"
+      fast_forward_upgrade_tasks:
+        - when:
+            - step|int == 0
+            - release == 'rocky'
+          block:
+            - name: Check if memcached is deployed
+              command: systemctl is-enabled --quiet memcached
+              tags: common
+              ignore_errors: True
+              register: memcached_enabled_result
+            - name: memcached_enabled
+              set_fact:
+                memcached_enabled: "{{ memcached_enabled_result.rc == 0 }}"
+        - name: Stop and disable memcached service
+          when:
+            - step|int == 2
+            - release == 'rocky'
+            - memcached_enabled|bool
+          service: name=memcached state=stopped enabled=no

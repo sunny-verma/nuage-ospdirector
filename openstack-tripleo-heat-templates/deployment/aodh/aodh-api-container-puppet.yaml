@@ -1,0 +1,303 @@
+heat_template_version: rocky
+
+description: >
+  OpenStack containerized aodh service
+
+parameters:
+  ContainerAodhApiImage:
+    description: image
+    type: string
+  ContainerAodhConfigImage:
+    description: The container image to use for the aodh config_volume
+    type: string
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  DeployIdentifier:
+    default: ''
+    type: string
+    description: >
+      Setting this to a unique value will re-run any deployment tasks which
+      perform configuration on a Heat stack-update.
+  EnableInternalTLS:
+    type: boolean
+    default: false
+  GnocchiExternalProject:
+    default: 'service'
+    description: Project name of resources creator in Gnocchi.
+    type: string
+  MonitoringSubscriptionAodhApi:
+    default: 'overcloud-ceilometer-aodh-api'
+    type: string
+  AodhApiPolicies:
+    description: |
+      A hash of policies to configure for Aodh API.
+      e.g. { aodh-context_is_admin: { key: context_is_admin, value: 'role:admin' } }
+    default: {}
+    type: json
+
+conditions:
+
+  internal_tls_enabled: {equals: [{get_param: EnableInternalTLS}, true]}
+
+resources:
+
+  ContainersCommon:
+    type: ../containers-common.yaml
+
+  MySQLClient:
+    type: ../database/mysql-client.yaml
+
+  AodhBase:
+    type: ./aodh-base.yaml
+    properties:
+      ServiceData: {get_param: ServiceData}
+      ServiceNetMap: {get_param: ServiceNetMap}
+      DefaultPasswords: {get_param: DefaultPasswords}
+      EndpointMap: {get_param: EndpointMap}
+      RoleName: {get_param: RoleName}
+      RoleParameters: {get_param: RoleParameters}
+
+  ApacheServiceBase:
+    type: ../../deployment/apache/apache-baremetal-puppet.yaml
+    properties:
+      ServiceData: {get_param: ServiceData}
+      ServiceNetMap: {get_param: ServiceNetMap}
+      DefaultPasswords: {get_param: DefaultPasswords}
+      EndpointMap: {get_param: EndpointMap}
+      RoleName: {get_param: RoleName}
+      RoleParameters: {get_param: RoleParameters}
+      EnableInternalTLS: {get_param: EnableInternalTLS}
+
+outputs:
+  role_data:
+    description: Role data for the aodh API role.
+    value:
+      service_name: aodh_api
+      monitoring_subscription: {get_param: MonitoringSubscriptionAodhApi}
+      config_settings:
+        map_merge:
+          - get_attr: [AodhBase, role_data, config_settings]
+          - get_attr: [ApacheServiceBase, role_data, config_settings]
+          - apache::default_vhost: false
+            aodh::wsgi::apache::ssl: {get_param: EnableInternalTLS}
+            aodh::wsgi::apache::servername:
+              str_replace:
+                template:
+                  "%{hiera('fqdn_$NETWORK')}"
+                params:
+                  $NETWORK: {get_param: [ServiceNetMap, AodhApiNetwork]}
+            aodh::wsgi::apache::wsgi_process_display_name: 'aodh_wsgi'
+            aodh::api::service_name: 'httpd'
+            aodh::api::enable_proxy_headers_parsing: true
+            aodh::api::gnocchi_external_project_owner: {get_param: GnocchiExternalProject}
+            aodh::policy::policies: {get_param: AodhApiPolicies}
+            tripleo::aodh_api::firewall_rules:
+              '128 aodh-api':
+                dport:
+                  - 8042
+                  - 13042
+            aodh::api::host:
+              str_replace:
+                template:
+                  "%{hiera('fqdn_$NETWORK')}"
+                params:
+                  $NETWORK: {get_param: [ServiceNetMap, AodhApiNetwork]}
+            # NOTE: bind IP is found in hiera replacing the network name with the
+            # local node IP for the given network; replacement examples
+            # (eg. for internal_api):
+            # internal_api -> IP
+            # internal_api_uri -> [IP]
+            # internal_api_subnet - > IP/CIDR
+            aodh::wsgi::apache::bind_host:
+              str_replace:
+                 template:
+                   "%{hiera('$NETWORK')}"
+                 params:
+                   $NETWORK: {get_param: [ServiceNetMap, AodhApiNetwork]}
+      service_config_settings: {get_attr: [AodhBase, role_data, service_config_settings]}
+      # BEGIN DOCKER SETTINGS
+      puppet_config:
+        config_volume: aodh
+        puppet_tags: aodh_api_paste_ini,aodh_config
+        step_config:
+          list_join:
+            - "\n"
+            - - "include tripleo::profile::base::aodh::api"
+              - {get_attr: [MySQLClient, role_data, step_config]}
+        config_image: {get_param: ContainerAodhConfigImage}
+      kolla_config:
+        /var/lib/kolla/config_files/aodh_api.json:
+          command: /usr/sbin/httpd -DFOREGROUND
+          config_files:
+            - source: "/var/lib/kolla/config_files/src/etc/httpd/conf.d"
+              dest: "/etc/httpd/conf.d"
+              merge: false
+              preserve_properties: true
+            - source: "/var/lib/kolla/config_files/src/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+          permissions:
+            - path: /var/log/aodh
+              owner: aodh:aodh
+              recurse: true
+      docker_config:
+        # db sync runs before permissions set by kolla_config
+        step_2:
+          aodh_init_log:
+            image: &aodh_api_image {get_param: ContainerAodhApiImage}
+            net: none
+            user: root
+            volumes:
+              - /var/log/containers/aodh:/var/log/aodh:z
+              - /var/log/containers/httpd/aodh-api:/var/log/httpd:z
+            command: ['/bin/bash', '-c', 'chown -R aodh:aodh /var/log/aodh']
+        step_3:
+          aodh_db_sync:
+            image: *aodh_api_image
+            net: host
+            privileged: false
+            detach: false
+            user: root
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/config-data/aodh/etc/my.cnf.d/tripleo.cnf:/etc/my.cnf.d/tripleo.cnf:ro
+                  - /var/lib/config-data/aodh/etc/aodh/:/etc/aodh/:ro
+                  - /var/log/containers/aodh:/var/log/aodh
+                  - /var/log/containers/httpd/aodh-api:/var/log/httpd
+            command: "/usr/bin/bootstrap_host_exec aodh_api su aodh -s /bin/bash -c /usr/bin/aodh-dbsync"
+            environment:
+              TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}
+        step_4:
+          aodh_api:
+            image: *aodh_api_image
+            net: host
+            privileged: false
+            restart: always
+            healthcheck:
+              test: /openstack/healthcheck
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/kolla/config_files/aodh_api.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/aodh/:/var/lib/kolla/config_files/src:ro
+                  - /var/log/containers/aodh:/var/log/aodh
+                  - /var/log/containers/httpd/aodh-api:/var/log/httpd
+                  -
+                    if:
+                      - internal_tls_enabled
+                      - /etc/pki/tls/certs/httpd:/etc/pki/tls/certs/httpd:ro
+                      - ''
+                  -
+                    if:
+                      - internal_tls_enabled
+                      - /etc/pki/tls/private/httpd:/etc/pki/tls/private/httpd:ro
+                      - ''
+            environment:
+              KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+      host_prep_tasks:
+      - name: create persistent logs directory
+        file:
+          path: "{{ item.path }}"
+          setype: "{{ item.setype }}"
+          state: directory
+        with_items:
+          - { 'path': /var/log/containers/aodh, 'setype': svirt_sandbox_file_t }
+          - { 'path': /var/log/containers/httpd/aodh-api, setype: svirt_sandbox_file_t }
+          - { 'path': /var/log/aodh, setype: svirt_sandbox_file_t }
+      - name: aodh logs readme
+        copy:
+          dest: /var/log/aodh/readme.txt
+          content: |
+            Log files from aodh containers can be found under
+            /var/log/containers/aodh and /var/log/containers/httpd/aodh-api.
+        ignore_errors: true
+      metadata_settings:
+        get_attr: [ApacheServiceBase, role_data, metadata_settings]
+      external_upgrade_tasks:
+        - when:
+            - step|int == 1
+          tags:
+            - never
+            - system_upgrade_transfer_data
+            - system_upgrade_stop_services
+          block:
+            - name: Stop aodh api container
+              import_role:
+                name: tripleo-container-stop
+              vars:
+                tripleo_containers_to_stop:
+                  - aodh_api
+                tripleo_delegate_to: "{{ groups['aodh_api'] | default([]) }}"
+      fast_forward_upgrade_tasks:
+        - when:
+            - step|int == 0
+            - release == 'rocky'
+          block:
+            - name: Check for aodh running under apache
+              tags: common
+              shell: "httpd -t -D DUMP_VHOSTS | grep -q aodh_wsgi"
+              ignore_errors: true
+              register: aodh_httpd_enabled_result
+            - name: Set fact aodh_httpd_enabled
+              set_fact:
+                aodh_httpd_enabled: "{{ aodh_httpd_enabled_result.rc == 0 }}"
+            - name: Check if httpd is running
+              ignore_errors: True
+              command: systemctl is-active --quiet httpd
+              register: httpd_running_result
+              when:
+                - httpd_running is undefined
+            - name: Set fact httpd_running if undefined
+              set_fact:
+                httpd_running: "{{ httpd_running_result.rc == 0 }}"
+              when:
+                - httpd_running is undefined
+        - name: Stop and disable aodh (under httpd)
+          service: name=httpd state=stopped enabled=no
+          when:
+            - step|int == 1
+            - release == 'rocky'
+            - aodh_httpd_enabled|bool
+            - httpd_running|bool
+        - name: Aodh package update
+          package:
+            name: 'openstack-aodh*'
+            state: latest
+          when:
+            - step|int == 6
+            - is_bootstrap_node|bool
+            - aodh_httpd_enabled|bool
+        - name: aodh db sync
+          command: aodh-dbsync
+          when:
+            - step|int == 8
+            - is_bootstrap_node|bool
+            - aodh_httpd_enabled|bool

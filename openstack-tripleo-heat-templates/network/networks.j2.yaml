@@ -1,0 +1,34 @@
+heat_template_version: rocky
+
+description: Create networks to split out Overcloud traffic
+
+parameters:
+  CtlplaneNetworkCidrs:
+    type: json
+    description: Cidrs for the ctlplane network.
+
+resources:
+  {%- for network in networks if network.enabled|default(true) %}
+  {%- set network_name = network.compat_name|default(network.name) %}
+  {{network_name}}Network:
+    type: OS::TripleO::Network::{{network.name}}
+  {%- endfor %}
+
+  NetworkExtraConfig:
+    type: OS::TripleO::Network::ExtraConfig
+
+
+outputs:
+  net_cidr_map:
+    value:
+      # NOTE(hjensas): If a network does not have any network_cidrs, fall back
+      # to the ctlplane (provisioning) network.
+      {%- for network in networks if network.enabled|default(true) %}
+      {%- set network_name = network.compat_name|default(network.name) %}
+      {{network.name_lower}}:
+        yaql:
+          data:
+            network_cidrs: {get_attr: [{{network_name}}Network, network_cidrs]}
+            ctlplane_cidrs: {get_param: CtlplaneNetworkCidrs}
+          expression: switch(not isList($.data.network_cidrs) => $.data.ctlplane_cidrs, $.data.network_cidrs => $.data.network_cidrs)
+      {%- endfor %}

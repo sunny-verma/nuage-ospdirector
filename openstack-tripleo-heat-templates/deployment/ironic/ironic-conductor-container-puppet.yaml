@@ -1,0 +1,619 @@
+heat_template_version: rocky
+
+description: >
+  OpenStack containerized Ironic Conductor service
+
+parameters:
+  ContainerIronicConductorImage:
+    description: image
+    type: string
+  ContainerIronicConfigImage:
+    description: The container image to use for the ironic config_volume
+    type: string
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  Debug:
+    default: false
+    description: Set to True to enable debugging on all services.
+    type: boolean
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  IronicConfigureSwiftTempUrlKey:
+    default: true
+    description: Whether to configure Swift temporary URLs for use with
+                 the "direct" and "ansible" deploy interfaces.
+    type: boolean
+  IronicAutomatedClean:
+    default: true
+    description: Enables or disables automated cleaning which may result in
+                 security problems and deployment failures on rebuilds.
+                 Do not set to False, unless you really know what you are doing.
+    type: boolean
+  IronicCleaningDiskErase:
+    default: 'full'
+    description: Type of disk cleaning before and between deployments,
+                 "full" for full cleaning, "metadata" to clean only disk
+                 metadata (partition table).
+    type: string
+  IronicCleaningNetwork:
+    default: 'provisioning'
+    description: Name or UUID of the *overcloud* network used for cleaning
+                 bare metal nodes. The default value of "provisioning" can be
+                 left during the initial deployment (when no networks are
+                 created yet) and should be changed to an actual UUID in
+                 a post-deployment stack update.
+    type: string
+  IronicDebug:
+    default: ''
+    description: Set to True to enable debugging Ironic services.
+    type: string
+    constraints:
+      - allowed_values: [ '', 'true', 'True', 'TRUE', 'false', 'False', 'FALSE']
+  IronicDefaultBootOption:
+    default: 'local'
+    description: How to boot the bare metal instances. Set to 'local' (the
+                 default) to use local bootloader (requires grub2 for partition
+                 images). Set to 'netboot' to make the instances boot from
+                 controllers using PXE/iPXE.
+    type: string
+  IronicDefaultDeployInterface:
+    default: ''
+    description: Deploy interface implementation to use by default. Leave empty to
+                 use the hardware type default.
+    type: string
+  IronicDefaultInspectInterface:
+    default: ''
+    description: Inspect interface implementation to use by default. Leave empty to
+                 use the hardware type default.
+    type: string
+  IronicDefaultNetworkInterface:
+    default: 'flat'
+    description: Network interface implementation to use by default.
+                 Set to "flat" (the default) to use one flat provider network.
+                 Set to "neutron" to make Ironic interact with the Neutron
+                 ML2 driver to enable other network types and certain
+                 advances networking features. Requires
+                 IronicProvisioningNetwork to be correctly set.
+    type: string
+  IronicDefaultRescueInterface:
+    default: 'agent'
+    description: Default rescue implementation to use. The "agent" rescue
+                 requires a compatible ramdisk to be used.
+    type: string
+  IronicDeployLogsStorageBackend:
+    default: 'local'
+    description: Backend to use to store ramdisk logs, either "local"
+                 or "swift".
+    type: string
+  IronicEnabledHardwareTypes:
+    default: ['ipmi', 'redfish']
+    description: Enabled Ironic hardware types
+    type: comma_delimited_list
+  IronicEnabledBiosInterfaces:
+    default: ['no-bios']
+    description: Enabled bios interface implementations. Each hardware
+                 type must have at least one valid implementation enabled.
+    type: comma_delimited_list
+  IronicEnabledBootInterfaces:
+    default: ['ipxe', 'pxe']
+    description: Enabled boot interface implementations. Each hardware
+                 type must have at least one valid implementation enabled.
+    type: comma_delimited_list
+  IronicEnabledConsoleInterfaces:
+    default: ['ipmitool-socat', 'no-console']
+    description: Enabled console interface implementations. Each hardware
+                 type must have at least one valid implementation enabled.
+    type: comma_delimited_list
+  IronicEnabledDeployInterfaces:
+    default: ['iscsi', 'direct']
+    description: Enabled deploy interface implementations. Each hardware
+                 type must have at least one valid implementation enabled.
+    type: comma_delimited_list
+  IronicEnabledInspectInterfaces:
+    default: ['no-inspect']
+    description: Enabled inspect interface implementations. Each hardware
+                 type must have at least one valid implementation enabled.
+    type: comma_delimited_list
+  IronicEnabledManagementInterfaces:
+    default: ['ipmitool', 'noop', 'redfish']
+    description: Enabled management interface implementations. Each hardware
+                 type must have at least one valid implementation enabled.
+    type: comma_delimited_list
+  IronicEnabledNetworkInterfaces:
+    default: ['flat', 'neutron']
+    description: Enabled network interface implementations. Each hardware
+                 type must have at least one valid implementation enabled.
+    type: comma_delimited_list
+  IronicEnabledPowerInterfaces:
+    default: ['ipmitool', 'redfish']
+    description: Enabled power interface implementations. Each hardware
+                 type must have at least one valid implementation enabled.
+    type: comma_delimited_list
+  IronicEnabledRaidInterfaces:
+    default: ['no-raid', 'agent']
+    description: Enabled RAID interface implementations. Each hardware
+                 type must have at least one valid implementation enabled.
+    type: comma_delimited_list
+  IronicEnabledRescueInterfaces:
+    default: ['no-rescue', 'agent']
+    description: Enabled rescue interface implementations. Each hardware
+                 type must have at least one valid implementation enabled.
+    type: comma_delimited_list
+  IronicEnabledStorageInterfaces:
+    default: ['cinder', 'noop']
+    description: Enabled storage interface implementations. Each hardware
+                 type must have at least one valid implementation enabled.
+    type: comma_delimited_list
+  IronicEnabledVendorInterfaces:
+    default: ['ipmitool', 'no-vendor']
+    description: Enabled vendor interface implementations. Each hardware
+                 type must have at least one valid implementation enabled.
+    type: comma_delimited_list
+  IronicEnableStagingDrivers:
+    default: false
+    description: Whether to enable use of staging drivers.
+    type: boolean
+  IronicImageDownloadSource:
+    default: swift
+    description: Image delivery method for the "direct" deploy interface.
+                 Use "swift" for the Object Storage temporary URLs,
+                 use "http" for the local HTTP server (the same as for iPXE).
+    type: string
+  IronicIPXEEnabled:
+    default: true
+    description: Whether to use iPXE instead of PXE for deployment.
+    type: boolean
+  IronicIPXEPort:
+    default: 8088
+    description: Port to use for serving images when iPXE is used.
+    type: string
+  IronicIPXETimeout:
+    default: 60
+    description: iPXE timeout in second. Set to 0 for infinite timeout.
+    type: string
+  IronicPassword:
+    description: The password for the Ironic service and db account, used by the Ironic services
+    type: string
+    hidden: true
+  IronicProvisioningNetwork:
+    default: 'provisioning'
+    description: Name or UUID of the *overcloud* network used for provisioning
+                 of bare metal nodes, if IronicDefaultNetworkInterface is
+                 set to "neutron". The default value of "provisioning" can be
+                 left during the initial deployment (when no networks are
+                 created yet) and should be changed to an actual UUID in
+                 a post-deployment stack update.
+    type: string
+  IronicRescuingNetwork:
+    default: 'provisioning'
+    description: Name or UUID of the *overcloud* network used for resucing
+                 of bare metal nodes, if IronicDefaultRescueInterface is not
+                 set to "no-rescue". The default value of "provisioning" can be
+                 left during the initial deployment (when no networks are
+                 created yet) and should be changed to an actual UUID in
+                 a post-deployment stack update.
+    type: string
+  IronicForcePowerStateDuringSync:
+    default: true
+    description: Whether to force power state during sync.
+    type: boolean
+  IronicConductorGroup:
+    description: The name of an Ironic Conductor Group.
+    default: ''
+    type: string
+    constraints:
+      - allowed_pattern: '^[a-zA-Z0-9_\-\.]*$'
+  MonitoringSubscriptionIronicConductor:
+    default: 'overcloud-ironic-conductor'
+    type: string
+  AdditionalArchitectures:
+    default: []
+    description: List of additional architectures to enable.
+    type: comma_delimited_list
+  IronicIpVersion:
+    default: 4
+    description: The IP version that will be used for PXE booting.
+    type: string
+
+conditions:
+  default_deploy_interface_unset: {equals : [{get_param: IronicDefaultDeployInterface}, '']}
+  default_inspect_interface_unset: {equals : [{get_param: IronicDefaultInspectInterface}, '']}
+  service_debug:
+    or:
+      - equals: [{get_param: IronicDebug}, 'true']
+      - equals: [{get_param: IronicDebug}, 'True']
+      - equals: [{get_param: IronicDebug}, 'TRUE']
+      - equals: [{get_param: Debug}, true]
+  enable_architecture_ppc64le: {contains: ['ppc64le', {get_param: AdditionalArchitectures}]}
+  configure_swift_temp_url: {equals: [{get_param: IronicConfigureSwiftTempUrlKey}, true]}
+  ironic_conductor_group: {not: {equals: [{get_param: IronicConductorGroup}, '']}}
+
+resources:
+
+  ContainersCommon:
+    type: ../containers-common.yaml
+
+  MySQLClient:
+    type: ../database/mysql-client.yaml
+
+  IronicBase:
+    type: ./ironic-base-puppet.yaml
+    properties:
+      ServiceData: {get_param: ServiceData}
+      ServiceNetMap: {get_param: ServiceNetMap}
+      DefaultPasswords: {get_param: DefaultPasswords}
+      EndpointMap: {get_param: EndpointMap}
+      RoleName: {get_param: RoleName}
+      RoleParameters: {get_param: RoleParameters}
+      Debug: {get_param: Debug}
+      IronicDebug: {get_param: IronicDebug}
+
+outputs:
+  role_data:
+    description: Role data for the Ironic Conductor role.
+    value:
+      service_name: ironic_conductor
+      monitoring_subscription: {get_param: MonitoringSubscriptionIronicConductor}
+      config_settings:
+        map_merge:
+          - get_attr: [IronicBase, role_data, config_settings]
+          -
+            if:
+            - default_deploy_interface_unset
+            - {}
+            - ironic::drivers::interfaces::default_deploy_interface: {get_param: IronicDefaultDeployInterface}
+          -
+            if:
+            - default_inspect_interface_unset
+            - {}
+            - ironic::drivers::interfaces::default_inspect_interface: {get_param: IronicDefaultInspectInterface}
+          -
+            if:
+            - enable_architecture_ppc64le
+            - ironic::pxe::enable_ppc64le: true
+              ironic::conductor::power_state_change_timeout: 60
+              ironic::drivers::ipmi::command_retry_timeout: 120
+              ironic::drivers::ipmi::min_command_interval: 15
+            - {}
+          - ironic::conductor::cleaning_disk_erase: {get_param: IronicCleaningDiskErase}
+            ironic::conductor::cleaning_network: {get_param: IronicCleaningNetwork}
+            ironic::conductor::provisioning_network: {get_param: IronicProvisioningNetwork}
+            ironic::conductor::rescuing_network: {get_param: IronicRescuingNetwork}
+            ironic::conductor::default_boot_option: {get_param: IronicDefaultBootOption}
+            ironic::conductor::automated_clean: {get_param: IronicAutomatedClean}
+            ironic::conductor::enabled_hardware_types: {get_param: IronicEnabledHardwareTypes}
+            ironic::conductor::force_power_state_during_sync: {get_param: IronicForcePowerStateDuringSync}
+            ironic::conductor::allow_provisioning_in_maintenance: false
+            # We need an endpoint containing a real IP, not a VIP here
+            ironic_conductor_http_host:
+              str_replace:
+                 template:
+                   "%{hiera('$NETWORK_uri')}"
+                 params:
+                   $NETWORK: {get_param: [ServiceNetMap, IronicNetwork]}
+            ironic::conductor::http_url:
+              list_join:
+                - ''
+                - - 'http://'
+                  - "%{hiera('ironic_conductor_http_host')}:"
+                  - {get_param: IronicIPXEPort}
+            ironic::drivers::pxe::ipxe_enabled: {get_param: IronicIPXEEnabled}
+            ironic::drivers::pxe::ipxe_timeout: {get_param: IronicIPXETimeout}
+            ironic::drivers::pxe::ip_version: {get_param: IronicIpVersion}
+            # NOTE: bind IP is found in hiera replacing the network name with the
+            # local node IP for the given network; replacement examples
+            # (eg. for internal_api):
+            # internal_api -> IP
+            # internal_api_uri -> [IP]
+            # internal_api_subnet - > IP/CIDR
+            ironic::drivers::pxe::tftp_server:
+              str_replace:
+                template:
+                  "%{hiera('$NETWORK')}"
+                params:
+                  $NETWORK: {get_param: [ServiceNetMap, IronicNetwork]}
+            ironic::pxe::tftp_bind_host:
+              str_replace:
+                template:
+                  "%{hiera('$NETWORK_uri')}"
+                params:
+                  $NETWORK: {get_param: [ServiceNetMap, IronicNetwork]}
+            # NOTE(dtantsur): UEFI only works with iPXE currently for us
+            ironic::drivers::pxe::uefi_pxe_config_template: '$pybasedir/drivers/modules/ipxe_config.template'
+            ironic::drivers::pxe::uefi_pxe_bootfile_name: 'ipxe.efi'
+            ironic::drivers::agent::deploy_logs_storage_backend: {get_param: IronicDeployLogsStorageBackend}
+            ironic::drivers::agent::deploy_logs_local_path: '/var/log/ironic/deploy/'
+            ironic::drivers::agent::deploy_logs_collect:
+              if:
+              - service_debug
+              - 'always'
+              - 'on_failure'
+            ironic::drivers::agent::image_download_source: {get_param: IronicImageDownloadSource}
+            # NOTE(emilien): ILO defaulting to UEFI does not match other drivers so bios is used.
+            ironic::drivers::ilo::default_boot_mode: 'bios'
+            ironic::drivers::interfaces::enabled_bios_interfaces: {get_param: IronicEnabledBiosInterfaces}
+            ironic::drivers::interfaces::enabled_boot_interfaces: {get_param: IronicEnabledBootInterfaces}
+            ironic::drivers::interfaces::enabled_console_interfaces: {get_param: IronicEnabledConsoleInterfaces}
+            ironic::drivers::interfaces::enabled_deploy_interfaces: {get_param: IronicEnabledDeployInterfaces}
+            ironic::drivers::interfaces::enabled_inspect_interfaces: {get_param: IronicEnabledInspectInterfaces}
+            ironic::drivers::interfaces::enabled_management_interfaces: {get_param: IronicEnabledManagementInterfaces}
+            ironic::drivers::interfaces::enabled_network_interfaces: {get_param: IronicEnabledNetworkInterfaces}
+            ironic::drivers::interfaces::enabled_power_interfaces: {get_param: IronicEnabledPowerInterfaces}
+            ironic::drivers::interfaces::enabled_raid_interfaces: {get_param: IronicEnabledRaidInterfaces}
+            ironic::drivers::interfaces::enabled_rescue_interfaces: {get_param: IronicEnabledRescueInterfaces}
+            ironic::drivers::interfaces::enabled_storage_interfaces: {get_param: IronicEnabledStorageInterfaces}
+            ironic::drivers::interfaces::enabled_vendor_interfaces: {get_param: IronicEnabledVendorInterfaces}
+            ironic::drivers::interfaces::default_network_interface: {get_param: IronicDefaultNetworkInterface}
+            ironic::drivers::interfaces::default_rescue_interface: {get_param: IronicDefaultRescueInterface}
+            tripleo::ironic_conductor::firewall_rules:
+              '134 ironic conductor TFTP':
+                dport: 69
+                proto: udp
+              '135 ironic conductor HTTP':
+                dport: {get_param: IronicIPXEPort}
+            # NOTE(dtantsur): the my_ip parameter is heavily overloaded in
+            # ironic. It's used as a default value for e.g. TFTP server IP,
+            # glance and neutron endpoints, virtual console IP. We override
+            # the TFTP server IP in ironic-conductor.yaml as it should not be
+            # the VIP, but rather a real IP of the host.
+            ironic::my_ip:
+              str_replace:
+                template:
+                  "%{hiera('$NETWORK')}"
+                params:
+                  $NETWORK: {get_param: [ServiceNetMap, IronicNetwork]}
+            ironic::pxe::common::http_port: {get_param: IronicIPXEPort}
+            # Credentials to access other services
+            ironic::cinder::auth_url: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix]}
+            ironic::cinder::username: 'ironic'
+            ironic::cinder::password: {get_param: IronicPassword}
+            ironic::cinder::project_name: 'service'
+            ironic::cinder::user_domain_name: 'Default'
+            ironic::cinder::project_domain_name: 'Default'
+            ironic::glance::auth_url: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix]}
+            ironic::glance::username: 'ironic'
+            ironic::glance::password: {get_param: IronicPassword}
+            ironic::glance::project_name: 'service'
+            ironic::glance::user_domain_name: 'Default'
+            ironic::glance::project_domain_name: 'Default'
+            ironic::neutron::auth_url: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix]}
+            ironic::neutron::username: 'ironic'
+            ironic::neutron::password: {get_param: IronicPassword}
+            ironic::neutron::project_name: 'service'
+            ironic::neutron::user_domain_name: 'Default'
+            ironic::neutron::project_domain_name: 'Default'
+            ironic::service_catalog::auth_url: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix]}
+            ironic::service_catalog::username: 'ironic'
+            ironic::service_catalog::password: {get_param: IronicPassword}
+            ironic::service_catalog::project_name: 'service'
+            ironic::service_catalog::user_domain_name: 'Default'
+            ironic::service_catalog::project_domain_name: 'Default'
+            ironic::swift::auth_url: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix]}
+            ironic::swift::username: 'ironic'
+            ironic::swift::password: {get_param: IronicPassword}
+            ironic::swift::project_name: 'service'
+            ironic::swift::user_domain_name: 'Default'
+            ironic::swift::project_domain_name: 'Default'
+            # ironic-inspector support is not implemented, but let's configure
+            # the credentials for consistency.
+            ironic::drivers::inspector::enabled: false
+            ironic::drivers::inspector::auth_url: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix]}
+            ironic::drivers::inspector::username: 'ironic'
+            ironic::drivers::inspector::password: {get_param: IronicPassword}
+            ironic::drivers::inspector::project_name: 'service'
+            ironic::drivers::inspector::user_domain_name: 'Default'
+            ironic::drivers::inspector::project_domain_name: 'Default'
+            tripleo::profile::base::ironic::conductor::enable_staging:  {get_param: IronicEnableStagingDrivers}
+          # to avoid hard linking errors we store these on the same
+          # volume/device as the ironic master_path
+          # https://github.com/docker/docker/issues/7457
+          - ironic::drivers::pxe::tftp_root: /var/lib/ironic/tftpboot
+          - ironic::drivers::pxe::tftp_master_path: /var/lib/ironic/tftpboot/master_images
+          - ironic::pxe::tftp_root: /var/lib/ironic/tftpboot
+          - ironic::pxe::http_root: /var/lib/ironic/httpboot
+          - ironic::conductor::http_root: /var/lib/ironic/httpboot
+          -
+            if:
+            - ironic_conductor_group
+            - ironic::conductor::conductor_group: {get_param: IronicConductorGroup}
+            - {}
+      service_config_settings: {}
+      # BEGIN DOCKER SETTINGS
+      puppet_config:
+        config_volume: ironic
+        puppet_tags: ironic_config
+        step_config:
+         list_join:
+            - "\n"
+            - - include ::tripleo::profile::base::ironic::conductor
+              - {get_attr: [MySQLClient, role_data, step_config]}
+        config_image: {get_param: ContainerIronicConfigImage}
+        volumes:
+          - /var/lib/ironic:/var/lib/ironic:z
+      kolla_config:
+        /var/lib/kolla/config_files/ironic_conductor.json:
+          command: /usr/bin/ironic-conductor
+          config_files:
+            - source: "/var/lib/kolla/config_files/src/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+          permissions:
+            - path: /var/lib/ironic
+              owner: ironic:ironic
+              recurse: true
+            - path: /var/log/ironic
+              owner: ironic:ironic
+              recurse: true
+      container_config_scripts:
+        create_swift_temp_url_key.sh:
+          mode: "0700"
+          content: |
+            #!/bin/bash
+            export OS_PROJECT_DOMAIN_NAME=$(crudini --get /etc/ironic/ironic.conf swift project_domain_name)
+            export OS_USER_DOMAIN_NAME=$(crudini --get /etc/ironic/ironic.conf swift user_domain_name)
+            export OS_PROJECT_NAME=$(crudini --get /etc/ironic/ironic.conf swift project_name)
+            export OS_USERNAME=$(crudini --get /etc/ironic/ironic.conf swift username)
+            export OS_PASSWORD=$(crudini --get /etc/ironic/ironic.conf swift password)
+            export OS_AUTH_URL=$(crudini --get /etc/ironic/ironic.conf swift auth_url)
+            export OS_AUTH_TYPE=password
+            export OS_IDENTITY_API_VERSION=3
+
+            echo "Check if a temporary URL key already exists"
+            RETVAL=-1
+            RETRIES=5
+            while [ ${RETVAL} -ne 0 ] && [ ${RETRIES} -gt 0 ]; do
+              RETRIES=$[$RETRIES-1]
+              CMD_OUT=$(openstack object store account show -f value)
+              RETVAL=$?
+              if [ ${RETVAL} -ne 0 ]; then
+                  echo Retrying...
+                  sleep 5
+                  continue
+              fi
+              if [[ ! ${CMD_OUT} =~ "Temp-Url-Key" ]] ; then
+                  echo "Creating a new temporary URL for project $OS_PROJECT_NAME"
+                  SWIFT_TEMP_URL_KEY=$(uuidgen | sha1sum | awk '{print $1}')
+                  openstack object store account set --property "Temp-URL-Key=$SWIFT_TEMP_URL_KEY"
+                  RETVAL=$?
+              fi
+            done
+
+      docker_config:
+        step_4:
+          map_merge:
+            - if:
+              - configure_swift_temp_url
+              - create_swift_temp_url_key:
+                  start_order: 70
+                  image: &ironic_conductor_image {get_param: ContainerIronicConductorImage}
+                  net: host
+                  detach: false
+                  volumes:
+                    list_concat:
+                      - {get_attr: [ContainersCommon, volumes]}
+                      -
+                        - /var/lib/config-data/puppet-generated/ironic/etc/ironic:/etc/ironic:ro
+                        - /var/lib/container-config-scripts/create_swift_temp_url_key.sh:/create_swift_temp_url_key.sh:ro
+                  user: root
+                  command: "/usr/bin/bootstrap_host_exec ironic_conductor /create_swift_temp_url_key.sh"
+              - {}
+            - ironic_conductor:
+                start_order: 80
+                image: *ironic_conductor_image
+                net: host
+                privileged: true
+                restart: always
+                healthcheck: {get_attr: [ContainersCommon, healthcheck_rpc_port]}
+                volumes:
+                  list_concat:
+                    - {get_attr: [ContainersCommon, volumes]}
+                    -
+                      - /var/lib/kolla/config_files/ironic_conductor.json:/var/lib/kolla/config_files/config.json:ro
+                      - /var/lib/config-data/puppet-generated/ironic/:/var/lib/kolla/config_files/src:ro
+                      - /lib/modules:/lib/modules:ro
+                      - /sys:/sys
+                      - /dev:/dev
+                      - /run:/run #shared?
+                      - /var/lib/ironic:/var/lib/ironic:z
+                      - /var/log/containers/ironic:/var/log/ironic:z
+                environment:
+                  KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+      host_prep_tasks:
+        - name: load iscsi_tcp module
+          import_role:
+            name: tripleo-module-load
+          vars:
+            modules:
+              - name: iscsi_tcp
+        - name: create persistent directories
+          file:
+            path: "{{ item.path }}"
+            state: directory
+            setype: "{{ item.setype }}"
+          with_items:
+            - { 'path': /var/log/containers/ironic, 'setype': svirt_sandbox_file_t }
+            - { 'path': /var/lib/ironic, 'setype': svirt_sandbox_file_t }
+            - { 'path': /var/log/ironic, 'setype': svirt_sandbox_file_t }
+        - name: ironic logs readme
+          copy:
+            dest: /var/log/ironic/readme.txt
+            content: |
+              Log files from ironic containers can be found under
+              /var/log/containers/ironic and /var/log/containers/httpd/ironic-*.
+          ignore_errors: true
+        - name: stat /httpboot
+          stat: path=/httpboot
+          register: stat_httpboot
+        - name: stat /tftpboot
+          stat: path=/tftpboot
+          register: stat_tftpboot
+        - name: stat /var/lib/ironic/httpboot
+          stat: path=/var/lib/ironic/httpboot
+          register: stat_ironic_httpboot
+        - name: stat /var/lib/ironic/tftpboot
+          stat: path=/var/lib/ironic/tftpboot
+          register: stat_ironic_tftpboot
+        # cannot use 'copy' module as with 'remote_src' it doesn't support recursion
+        - name: migrate /httpboot to containerized (if applicable)
+          command: /bin/cp -R /httpboot /var/lib/ironic/httpboot
+          when: stat_httpboot.stat.exists and not stat_ironic_httpboot.stat.exists
+        - name: migrate /tftpboot to containerized (if applicable)
+          command: /bin/cp -R /tftpboot /var/lib/ironic/tftpboot
+          when: stat_tftpboot.stat.exists and not stat_ironic_tftpboot.stat.exists
+        # Even if there was nothing to copy from original locations,
+        # we need to create the dirs before starting the containers
+        - name: ensure ironic pxe directories exist
+          file:
+            path: /var/lib/ironic/{{ item }}
+            state: directory
+          with_items:
+            - httpboot
+            - tftpboot
+      fast_forward_upgrade_tasks:
+        - when:
+            - step|int == 0
+            - release == 'rocky'
+          block:
+            - name: Check if ironic_conductor is deployed
+              command: systemctl is-enabled --quiet openstack-ironic-conductor
+              ignore_errors: True
+              register: ironic_conductor_enabled_result
+            - name: Set fact ironic_conductor_enabled
+              set_fact:
+                ironic_conductor_enabled: "{{ ironic_conductor_enabled_result.rc == 0 }}"
+        - name: Stop openstack-ironic-conductor
+          service: name=openstack-ironic-conductor state=stopped enabled=no
+          when:
+            - step|int == 1
+            - release == 'rocky'
+            - ironic_conductor_enabled|bool
+        - name: Ironic packages update
+          package:
+            name: 'openstack-ironic*'
+            state: latest
+          when:
+            - step|int == 6
+            - is_bootstrap_node|bool

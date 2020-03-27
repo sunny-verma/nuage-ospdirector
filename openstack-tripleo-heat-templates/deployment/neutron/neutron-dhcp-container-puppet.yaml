@@ -1,0 +1,488 @@
+heat_template_version: rocky
+
+description: >
+  OpenStack containerized Neutron DHCP service
+
+parameters:
+  ContainerNeutronDHCPImage:
+    description: image
+    type: string
+  ContainerNeutronConfigImage:
+    description: The container image to use for the neutron config_volume
+    type: string
+  DockerNeutronDHCPAgentUlimit:
+    default: ['nofile=16384']
+    description: ulimit for Neutron DHCP Agent Container
+    type: comma_delimited_list
+  DockerAdditionalSockets:
+    default: ['/var/lib/openstack/docker.sock']
+    description: Additional domain sockets for the docker daemon to bind to (useful for mounting
+                 into containers that launch other containers)
+    type: comma_delimited_list
+  NeutronEnableDnsmasqDockerWrapper:
+    description: Generate a dnsmasq wrapper script so that neutron launches
+                 dnsmasq in a separate container.
+    type: boolean
+    default: true
+  NeutronEnableHaproxyDockerWrapper:
+    description: Generate a wrapper script so neutron launches haproxy in a separate container.
+    type: boolean
+    default: true
+  Debug:
+    type: boolean
+    default: false
+    description: Set to True to enable debugging on all services.
+  NeutronWrapperDebug:
+    type: boolean
+    default: false
+    description: Controls debugging for the wrapper scripts.
+  ContainerCli:
+    type: string
+    default: 'podman'
+    description: CLI tool used to manage containers.
+    constraints:
+      - allowed_values: ['docker', 'podman']
+  NeutronDhcpAgentLoggingSource:
+    type: json
+    default:
+      tag: openstack.neutron.agent.dhcp
+      file: /var/log/containers/neutron/dhcp-agent.log
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  DeployIdentifier:
+    default: ''
+    type: string
+    description: >
+      Setting this to a unique value will re-run any deployment tasks which
+      perform configuration on a Heat stack-update.
+  EnableInternalTLS:
+    type: boolean
+    default: false
+  InternalTLSCAFile:
+    default: '/etc/ipa/ca.crt'
+    type: string
+    description: Specifies the default CA cert to use if TLS is used for
+                 services in the internal network.
+  NeutronEnableMetadataNetwork:
+    default: false
+    description: If True, DHCP provide metadata network. Requires either
+                 IsolatedMetadata or ForceMetadata parameters to also be True.
+    type: boolean
+  NeutronEnableIsolatedMetadata:
+    default: false
+    description: If True, DHCP provide metadata route to VM.
+    type: boolean
+  NeutronEnableForceMetadata:
+    default: false
+    description: If True, DHCP always provides metadata route to VM.
+    type: boolean
+  NeutronEnableInternalDNS:
+    default: false
+    description: |
+      If True, enable the internal Neutron DNS server that provides name
+      resolution between VMs.  This parameter has no effect if
+      NeutronDhcpAgentDnsmasqDnsServers is set.
+    type: boolean
+  MonitoringSubscriptionNeutronDhcp:
+    default: 'overcloud-neutron-dhcp'
+    type: string
+  NeutronDhcpAgentDebug:
+    default: ''
+    description: Set to True to enable debugging for Neutron DHCP agent.
+    type: string
+    constraints:
+      - allowed_values: [ '', 'true', 'True', 'TRUE', 'false', 'False', 'FALSE']
+  NeutronDhcpAgentDnsmasqDnsServers:
+    default: []
+    description: List of servers to use as dnsmasq forwarders
+    type: comma_delimited_list
+  NeutronInterfaceDriver:
+    default: 'neutron.agent.linux.interface.OVSInterfaceDriver'
+    description: Neutron DHCP Agent interface driver
+    type: string
+  NeutronDhcpOvsIntegrationBridge:
+    default: ''
+    type: string
+    description: Name of Open vSwitch bridge to use
+  NeutronDhcpServerBroadcastReply:
+    default: false
+    description: Neutron DHCP agent to use broadcast in DHCP replies
+    type: boolean
+  # TODO(bogdando): The experimental OVN SRIOV environment includes the
+  # DHCP agent service. We keep it safe to not break it with AZ-related
+  # configurations. Therefore, we have to determine, if
+  # NeutronMechanismDrivers is OVN or not. This may change in future,
+  # when OVN/SRIOV supports Neutron AZ configurations for the agent services.
+  NeutronMechanismDrivers:
+    default: 'ovn'
+    description: |
+        The mechanism drivers for the Neutron tenant network.
+    type: comma_delimited_list
+  NeutronDhcpAgentAvailabilityZone:
+    description: Availability zone for Neutron DHCP agent. If not set,
+                 no AZs will be configured for Neutron network services.
+    default: ''
+    type: string
+
+conditions:
+
+  internal_tls_enabled: {equals: [{get_param: EnableInternalTLS}, true]}
+  dnsmasq_wrapper_enabled: {equals: [{get_param: NeutronEnableDnsmasqDockerWrapper}, true]}
+  haproxy_wrapper_enabled: {equals: [{get_param: NeutronEnableHaproxyDockerWrapper}, true]}
+  docker_enabled: {equals: [{get_param: ContainerCli}, 'docker']}
+  service_wrapper_debug_unset: {equals : [{get_param: NeutronWrapperDebug}, false]}
+  service_debug_unset: {equals: [{get_param: NeutronDhcpAgentDebug}, '']}
+  dhcp_ovs_intergation_bridge_unset: {equals: [{get_param: NeutronDhcpOvsIntegrationBridge}, '']}
+  is_ovn_in_neutron_mechanism_driver: {contains: ['ovn', {get_param: NeutronMechanismDrivers}]}
+  az_unset: {equals: [{get_param: NeutronDhcpAgentAvailabilityZone}, '']}
+  omit_az_configs: {or: [is_ovn_in_neutron_mechanism_driver, az_unset]}
+
+resources:
+
+  ContainersCommon:
+    type: ../containers-common.yaml
+
+  NeutronBase:
+    type: ./neutron-base.yaml
+    properties:
+      EndpointMap: {get_param: EndpointMap}
+      ServiceData: {get_param: ServiceData}
+      ServiceNetMap: {get_param: ServiceNetMap}
+      DefaultPasswords: {get_param: DefaultPasswords}
+      RoleName: {get_param: RoleName}
+      RoleParameters: {get_param: RoleParameters}
+
+  NeutronLogging:
+    type: OS::TripleO::Services::Logging::NeutronCommon
+    properties:
+      NeutronServiceName: dhcp-agent
+
+outputs:
+  role_data:
+    description: Role data for the Neutron DHCP role.
+    value:
+      service_name: neutron_dhcp
+      monitoring_subscription: {get_param: MonitoringSubscriptionNeutronDhcp}
+      config_settings:
+        map_merge:
+          - get_attr: [NeutronBase, role_data, config_settings]
+          - get_attr: [NeutronLogging, config_settings]
+          - tripleo::profile::base::neutron::dhcp_agent_wrappers::enable_dnsmasq_wrapper: {get_param: NeutronEnableDnsmasqDockerWrapper}
+            tripleo::profile::base::neutron::dhcp_agent_wrappers::dnsmasq_process_wrapper: '/var/lib/neutron/dnsmasq_wrapper'
+            tripleo::profile::base::neutron::dhcp_agent_wrappers::dnsmasq_image: {get_param: ContainerNeutronDHCPImage}
+            tripleo::profile::base::neutron::dhcp_agent_wrappers::enable_haproxy_wrapper: {get_param: NeutronEnableHaproxyDockerWrapper}
+            tripleo::profile::base::neutron::dhcp_agent_wrappers::haproxy_process_wrapper: '/var/lib/neutron/dhcp_haproxy_wrapper'
+            tripleo::profile::base::neutron::dhcp_agent_wrappers::haproxy_image: {get_param: ContainerNeutronDHCPImage}
+            tripleo::profile::base::neutron::dhcp_agent_wrappers::debug:
+              if:
+                - service_wrapper_debug_unset
+                - {get_param: Debug }
+                - {get_param: NeutronWrapperDebug}
+            tripleo::profile::base::neutron::container_cli: {get_param: ContainerCli}
+            neutron::agents::dhcp::enable_isolated_metadata: {get_param: NeutronEnableIsolatedMetadata}
+            neutron::agents::dhcp::enable_force_metadata: {get_param: NeutronEnableForceMetadata}
+            neutron::agents::dhcp::enable_metadata_network: {get_param: NeutronEnableMetadataNetwork}
+            neutron::agents::dhcp::dnsmasq_local_resolv: {get_param: NeutronEnableInternalDNS}
+            neutron::agents::dhcp::dnsmasq_dns_servers: {get_param: NeutronDhcpAgentDnsmasqDnsServers}
+            neutron::agents::dhcp::interface_driver: {get_param: NeutronInterfaceDriver}
+            neutron::agents::dhcp::dhcp_broadcast_reply: {get_param: NeutronDhcpServerBroadcastReply}
+            neutron::agents::dhcp::debug:
+              if:
+              - service_debug_unset
+              - {get_param: Debug}
+              - {get_param: NeutronDhcpAgentDebug}
+            tripleo::neutron_dhcp::firewall_rules:
+              '115 neutron dhcp input':
+                ipversion: 'ipv4'
+                proto: 'udp'
+                dport: 67
+              '116 neutron dhcp output':
+                ipversion: 'ipv4'
+                proto: 'udp'
+                chain: 'OUTPUT'
+                dport: 68
+              '115 neutron dhcpv6 input':
+                ipversion: 'ipv6'
+                proto: 'udp'
+                dport: 547
+              '116 neutron dhcpv6 output':
+                ipversion: 'ipv6'
+                proto: 'udp'
+                chain: 'OUTPUT'
+                dport: 546
+              '116 neutron dhcpv6 relay output':
+                ipversion: 'ipv6'
+                proto: 'udp'
+                chain: 'OUTPUT'
+                dport: 547
+          - if:
+              - internal_tls_enabled
+              - neutron::agents::dhcp::ovsdb_agent_ssl_key_file: '/etc/pki/tls/private/neutron.key'
+                neutron::agents::dhcp::ovsdb_agent_ssl_cert_file: '/etc/pki/tls/certs/neutron.crt'
+                neutron::agents::dhcp::ovsdb_agent_ssl_ca_file: {get_param: InternalTLSCAFile}
+                generate_service_certificates: true
+                tripleo::profile::base::neutron::certificate_specs:
+                  service_certificate: '/etc/pki/tls/certs/neutron.crt'
+                  service_key: '/etc/pki/tls/private/neutron.key'
+                  hostname:
+                    str_replace:
+                      template: "%{hiera('fqdn_NETWORK')}"
+                      params:
+                        NETWORK: {get_param: [ServiceNetMap, NeutronApiNetwork]}
+                  principal:
+                    str_replace:
+                      template: "neutron/%{hiera('fqdn_NETWORK')}"
+                      params:
+                        NETWORK: {get_param: [ServiceNetMap, NeutronApiNetwork]}
+                  postsave_cmd: "/usr/bin/certmonger-neutron-dhcpd-refresh.sh"
+              - {}
+          - if:
+              - dhcp_ovs_intergation_bridge_unset
+              - {}
+              - neutron::agents::dhcp::ovs_integration_bridge: {get_param: NeutronDhcpOvsIntegrationBridge}
+          - if:
+              - omit_az_configs
+              - {}
+              - neutron::agents::dhcp::availability_zone: {get_param: NeutronDhcpAgentAvailabilityZone}
+      service_config_settings:
+        map_merge:
+          - get_attr: [NeutronBase, role_data, service_config_settings]
+          - rsyslog:
+              tripleo_logging_sources_neutron_dhcp:
+                - {get_param: NeutronDhcpAgentLoggingSource}
+      # BEGIN DOCKER SETTINGS
+      puppet_config:
+        config_volume: neutron
+        puppet_tags: neutron_config,neutron_dhcp_agent_config
+        step_config: |
+          include tripleo::profile::base::neutron::dhcp
+        config_image: {get_param: ContainerNeutronConfigImage}
+      kolla_config:
+        /var/lib/kolla/config_files/neutron_dhcp.json:
+          command:
+            list_join:
+            - ' '
+            - - /usr/bin/neutron-dhcp-agent --config-file /usr/share/neutron/neutron-dist.conf --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/dhcp_agent.ini --config-dir /etc/neutron/conf.d/common --config-dir /etc/neutron/conf.d/neutron-dhcp-agent
+              - get_attr: [NeutronLogging, cmd_extra_args]
+          config_files:
+            - source: "/var/lib/kolla/config_files/src/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+            - source: "/var/lib/kolla/config_files/src-tls/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+              optional: true
+          permissions:
+            - path: /var/log/neutron
+              owner: neutron:neutron
+              recurse: true
+            - path: /var/lib/neutron
+              owner: neutron:neutron
+              recurse: true
+            - path: /etc/pki/tls/certs/neutron.crt
+              owner: neutron:neutron
+            - path: /etc/pki/tls/private/neutron.key
+              owner: neutron:neutron
+      container_config_scripts: {get_attr: [ContainersCommon, container_config_scripts]}
+      deploy_steps_tasks:
+        - when: step|int == 1
+          block:
+            - name: set conditions
+              set_fact:
+                dnsmasq_wrapper_enabled: {get_param: NeutronEnableDnsmasqDockerWrapper}
+                haproxy_wrapper_enabled: {get_param: NeutronEnableHaproxyDockerWrapper}
+                debug_enabled: {get_param: Debug}
+                docker_additional_sockets: {get_param: DockerAdditionalSockets}
+            - name: create kill_scripts directory within /var/lib/neutron
+              file:
+                state: directory
+                path: /var/lib/neutron/kill_scripts
+            - name: create dnsmasq dhcp kill script
+              when: dnsmasq_wrapper_enabled|bool
+              copy:
+                dest: /var/lib/neutron/kill_scripts/dnsmasq-kill
+                mode: 0755
+                content: {get_file: ./kill-script}
+            - name: create haproxy kill script
+              when: haproxy_wrapper_enabled|bool
+              copy:
+                dest: /var/lib/neutron/kill_scripts/haproxy-kill
+                mode: 0755
+                content: {get_file: ./kill-script}
+      docker_config:
+        step_2:
+          create_dnsmasq_wrapper:
+            start_order: 1
+            detach: false
+            net: host
+            pid: host
+            user: root
+            command: # '/container_puppet_apply.sh "STEP" "TAGS" "CONFIG" "DEBUG"'
+              list_concat:
+                -
+                  - '/container_puppet_apply.sh'
+                  - '4'
+                  - 'file'
+                  - 'include ::tripleo::profile::base::neutron::dhcp_agent_wrappers'
+            image: {get_param: ContainerNeutronDHCPImage}
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, container_puppet_apply_volumes]}
+                -
+                  - /run/openvswitch:/run/openvswitch:shared,z
+                  - /var/lib/neutron:/var/lib/neutron:shared,z
+            environment:
+              TRIPLEO_DEPLOY_IDENTIFIER: {get_param: DeployIdentifier}
+        step_4:
+          neutron_dhcp:
+            start_order: 10
+            image: {get_param: ContainerNeutronDHCPImage}
+            net: host
+            pid: host
+            privileged: true
+            restart: always
+            security_opt: 'label=disable'
+            depends_on:
+              - openvswitch.service
+            healthcheck: {get_attr: [ContainersCommon, healthcheck_rpc_port]}
+            ulimit: {get_param: DockerNeutronDHCPAgentUlimit}
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                - {get_attr: [NeutronLogging, volumes]}
+                -
+                  - /var/lib/kolla/config_files/neutron_dhcp.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/neutron/:/var/lib/kolla/config_files/src:ro
+                  - /lib/modules:/lib/modules:ro
+                  - /run/openvswitch:/run/openvswitch:shared,z
+                  - /var/lib/neutron:/var/lib/neutron:shared,z
+                  - /run/netns:/run/netns:shared
+                  - /var/lib/neutron/kill_scripts:/etc/neutron/kill_scripts:shared,z
+                -
+                  if:
+                    - docker_enabled
+                    - - /var/lib/openstack:/var/lib/openstack
+                    - null
+                -
+                  if:
+                    - dnsmasq_wrapper_enabled
+                    - - /var/lib/neutron/dnsmasq_wrapper:/usr/local/bin/dnsmasq:ro
+                    - null
+                -
+                  if:
+                    - haproxy_wrapper_enabled
+                    - - /var/lib/neutron/dhcp_haproxy_wrapper:/usr/local/bin/haproxy:ro
+                    - null
+                -
+                  if:
+                    - internal_tls_enabled
+                    - - /etc/pki/tls/certs/neutron.crt:/var/lib/kolla/config_files/src-tls/etc/pki/tls/certs/neutron.crt:ro
+                      - /etc/pki/tls/private/neutron.key:/var/lib/kolla/config_files/src-tls/etc/pki/tls/private/neutron.key:ro
+                    - null
+            environment:
+              KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+      metadata_settings:
+        if:
+          - internal_tls_enabled
+          -
+            - service: neutron
+              network: {get_param: [ServiceNetMap, NeutronApiNetwork]}
+              type: node
+          - null
+      host_prep_tasks:
+        list_concat:
+          - {get_attr: [NeutronLogging, host_prep_tasks]}
+          - - name: create /run/netns with temp namespace
+              command: ip netns add ns_temp
+              register: ipnetns_add_result
+              ignore_errors: True
+          - - name: remove temp namespace
+              command: ip netns delete ns_temp
+              ignore_errors: True
+              when: ipnetns_add_result.rc == 0
+          - - name: create /var/lib/neutron
+              file:
+                path: /var/lib/neutron
+                state: directory
+                setype: svirt_sandbox_file_t
+          - - name: enable virt_sandbox_use_netlink for healtcheck
+              seboolean:
+                name: virt_sandbox_use_netlink
+                persistent: yes
+                state: yes
+      upgrade_tasks: []
+      fast_forward_upgrade_tasks:
+        - when:
+            - step|int == 0
+            - release == 'rocky'
+          block:
+            - name: Check if neutron_dhcp_agent is deployed
+              command: systemctl is-enabled --quiet neutron-dhcp-agent
+              ignore_errors: True
+              register: neutron_dhcp_agent_enabled_result
+            - name: Set fact neutron_dhcp_agent_enabled
+              set_fact:
+                neutron_dhcp_agent_enabled: "{{ neutron_dhcp_agent_enabled_result.rc == 0 }}"
+        - name: Stop neutron_dhcp_agent
+          service: name=neutron-dhcp-agent state=stopped enabled=no
+          when:
+            - step|int == 2
+            - release == 'rocky'
+            - neutron_dhcp_agent_enabled|bool
+      post_upgrade_tasks:
+        - name: Check for neutron user
+          getent:
+            database: passwd
+            key: neutron
+          ignore_errors: True
+        - name: Set neutron_user_avail
+          set_fact:
+            neutron_user_avail: "{{ getent_passwd is defined }}"
+        - when:
+            - step|int == 2
+            - neutron_user_avail|bool
+          block:
+            - name: Ensure read/write access for files created after upgrade
+              become: true
+              shell: |
+                umask 0002
+                setfacl -d -R -m u:neutron:rwx /var/lib/neutron
+                setfacl -R -m u:neutron:rw /var/lib/neutron
+                find /var/lib/neutron -type d -exec setfacl -m u:neutron:rwx '{}' \;
+            - name: Provide access for domain sockets
+              ignore_errors: True
+              become: true
+              shell: |
+                umask 0002
+                setfacl -m u:neutron:rwx "{{ item }}"
+              with_items:
+                - /var/lib/neutron/metadata_proxy
+                - /var/lib/neutron
+              # These files are not necessarily present
+              ignore_errors: True

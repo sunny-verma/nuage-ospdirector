@@ -1,0 +1,2 @@
+resource_registry:
+  OS::TripleO::Services::Etcd: ../../deployment/etcd/etcd-container-puppet.yaml

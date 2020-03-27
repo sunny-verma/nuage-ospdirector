@@ -1,0 +1,242 @@
+heat_template_version: rocky
+
+description: >
+  OpenStack containerized Designate Worker service
+
+parameters:
+  ContainerDesignateWorkerImage:
+    description: image
+    type: string
+  ContainerDesignateBackendBIND9Image:
+    description: image
+    type: string
+  ContainerDesignateConfigImage:
+    description: The container image to use for the designate config_volume
+    type: string
+  DesignateWorkerLoggingSource:
+    type: json
+    default:
+      tag: openstack.designate.worker
+      file: /var/log/containers/designate/designate-worker.log
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  MonitoringSubscriptionDesignateWorker:
+    default: 'overcloud-designate-worker'
+    type: string
+  DesignateWorkers:
+    default: 0
+    description: Number of workers for Designate services.
+    type: number
+  DesignateRndcKey:
+    description: The rndc key secret for communication with BIND.
+    type: string
+    hidden: true
+
+conditions:
+  designate_workers_zero: {equals : [{get_param: DesignateWorkers}, 0]}
+
+resources:
+
+  ContainersCommon:
+    type: ../../containers-common.yaml
+
+  DesignateBase:
+    type: ./designate-base.yaml
+    properties:
+      EndpointMap: {get_param: EndpointMap}
+      ServiceData: {get_param: ServiceData}
+      ServiceNetMap: {get_param: ServiceNetMap}
+      DefaultPasswords: {get_param: DefaultPasswords}
+      RoleName: {get_param: RoleName}
+      RoleParameters: {get_param: RoleParameters}
+
+outputs:
+  role_data:
+    description: Role data for the Designate Worker role.
+    value:
+      service_name: designate_worker
+      monitoring_subscription: {get_param: MonitoringSubscriptionDesignateWorker}
+      config_settings:
+        map_merge:
+          - get_attr: [DesignateBase, role_data, config_settings]
+          - designate::worker::worker_notify: true
+            designate_rndc_key: {get_param: DesignateRndcKey}
+            dns::vardir: /var/named-persistent
+            dns::recursion: 'no'
+            # Because we generate the key locally and don't want the puppet
+            # module to do it, we set its path to /dev/null.  This means we need
+            # to explicitly include /etc/rndc.key though since the default config
+            # will just include /dev/null.
+            dns::rndckeypath: /dev/null
+            dns::additional_directives:
+              - include "/etc/rndc.key";
+            dns::additional_options:
+              listen-on:
+                str_replace:
+                  template:
+                    "{ %{hiera('$NETWORK')}; }"
+                  params:
+                    $NETWORK: {get_param: [ServiceNetMap, BINDNetwork]}
+            tripleo::profile::base::designate::rndc_host:
+              str_replace:
+                template:
+                  "%{hiera('$NETWORK')}"
+                params:
+                  $NETWORK: {get_param: [ServiceNetMap, DesignateApiNetwork]}
+            tripleo::profile::base::designate::rndc_allowed_addresses:
+              get_param:
+                - ServiceData
+                - net_cidr_map
+                - {get_param: [ServiceNetMap, DesignateApiNetwork]}
+            designate::backend::bind9::rndc_host:
+              str_replace:
+                template:
+                  "%{hiera('$NETWORK')}"
+                params:
+                  $NETWORK: {get_param: [ServiceNetMap, DesignateApiNetwork]}
+            tripleo::designate_worker::firewall_rules:
+              '140 designate_worker udp':
+                proto: 'udp'
+                dport:
+                  - 53
+                  - 953
+              '141 designate_worker tcp':
+                proto: 'tcp'
+                dport:
+                  - 53
+                  - 953
+          -
+            if:
+            - designate_workers_zero
+            - {}
+            - designate::worker::workers: {get_param: DesignateWorkers}
+      service_config_settings:
+        rsyslog:
+          tripleo_logging_sources_designate_worker:
+            - {get_param: DesignateWorkerLoggingSource}
+      # BEGIN DOCKER SETTINGS
+      puppet_config:
+        config_volume: designate
+        puppet_tags: designate_config,dns_config
+        step_config:
+          list_join:
+            - "\n"
+            - - {get_attr: [DesignateBase, role_data, step_config]}
+              - "include tripleo::profile::base::designate::worker"
+              - include ::designate::backend::bind9
+        config_image: {get_param: ContainerDesignateConfigImage}
+        volumes:
+          - /var/named-persistent:/var/named-persistent:z
+      kolla_config:
+        /var/lib/kolla/config_files/designate_worker.json:
+          command: /usr/bin/designate-worker --config-file=/etc/designate/designate.conf --log-file=/var/log/designate/worker.log
+          config_files:
+            - source: "/var/lib/kolla/config_files/src/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+          permissions:
+            - path: /var/log/designate
+              owner: designate:designate
+              recurse: true
+        /var/lib/kolla/config_files/designate_backend_bind9.json:
+          command: /usr/sbin/named -u named -c /etc/named.conf -f -g
+          config_files:
+            - source: "/var/lib/kolla/config_files/src/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+            - source: "/var/named/*"
+              dest: "/var/named-persistent/"
+              merge: true
+              preserve_properties: true
+          permissions:
+            - path: /var/log/designate
+              owner: designate:designate
+              recurse: true
+            - path: /var/named-persistent
+              owner: root:named
+              perm: '0770'
+            - path: /etc/rndc.key
+              owner: root:named
+              perm: '0640'
+      docker_config:
+        step_4:
+          designate_worker:
+            image: &designate_worker_image {get_param: ContainerDesignateWorkerImage}
+            net: host
+            privileged: false
+            restart: always
+            healthcheck:
+              test: /openstack/healthcheck
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /run:/run
+                  - /var/lib/kolla/config_files/designate_worker.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/designate/:/var/lib/kolla/config_files/src:ro
+                  - /var/log/containers/designate:/var/log/designate:z
+            environment:
+              KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+          designate_backend_bind9:
+            image: {get_param: ContainerDesignateBackendBIND9Image}
+            net: host
+            privileged: true
+            restart: always
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /run:/run
+                  - /var/lib/kolla/config_files/designate_backend_bind9.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/designate/:/var/lib/kolla/config_files/src:ro
+                  - /var/log/containers/designate:/var/log/designate:z
+                  - /var/named-persistent:/var/named-persistent:z
+            environment:
+              KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+      host_prep_tasks:
+        - name: create persistent directories
+          file:
+            path: "{{ item.path }}"
+            state: directory
+            setype: "{{ item.setype }}"
+          with_items:
+            - { 'path': /var/log/designate, 'setype': svirt_sandbox_file_t }
+            - { 'path': /var/log/containers/designate, 'setype': svirt_sandbox_file_t }
+        - name: designate logs readme
+          copy:
+            dest: /var/log/designate/readme.txt
+            content: |
+              Log files from designate containers can be found under
+              /var/log/containers/designate.
+          ignore_errors: true
+        - name: create persistent named directory
+          file:
+            path: /var/named-persistent
+            state: directory
+            setype: svirt_sandbox_file_t

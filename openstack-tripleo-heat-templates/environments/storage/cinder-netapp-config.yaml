@@ -1,0 +1,131 @@
+# *******************************************************************
+# This file was created automatically by the sample environment
+# generator. Developers should use `tox -e genconfig` to update it.
+# Users are recommended to make changes to a copy of the file instead
+# of the original, if any customizations are needed.
+# *******************************************************************
+# title: Enable the Cinder NetApp Backend
+# description: |
+#   A Heat environment file which can be used to enable a
+#   a Cinder NetApp backend, configured via puppet
+parameter_defaults:
+  # The availability zone of the NetApp Cinder backend. When set, it overrides the default CinderStorageAvailabilityZone.
+  # Type: string
+  CinderNetappAvailabilityZone: ''
+
+  # 
+  # Type: string
+  CinderNetappBackendName: tripleo_netapp
+
+  # 
+  # Type: string
+  CinderNetappControllerIps: ''
+
+  # 
+  # Type: string
+  CinderNetappCopyOffloadToolPath: ''
+
+  # 
+  # Type: string
+  CinderNetappHostType: ''
+
+  # 
+  # Mandatory. This parameter must be set by the user.
+  # Type: string
+  CinderNetappLogin: <None>
+
+  # 
+  # Type: string
+  CinderNetappNasSecureFileOperations: false
+
+  # 
+  # Type: string
+  CinderNetappNasSecureFilePermissions: false
+
+  # 
+  # Type: string
+  CinderNetappNfsMountOptions: ''
+
+  # 
+  # Type: string
+  CinderNetappNfsShares: ''
+
+  # 
+  # Type: string
+  CinderNetappNfsSharesConfig: /etc/cinder/shares.conf
+
+  # 
+  # Type: string
+  CinderNetappPartnerBackendName: ''
+
+  # 
+  # Mandatory. This parameter must be set by the user.
+  # Type: string
+  CinderNetappPassword: <None>
+
+  # Regular expression that will be applied to the names of FlexVol volumes in the Netapp backend that represent pools in Cinder. It may be used to restrict provisioning to the specified FlexVol volumes.
+  # Type: string
+  CinderNetappPoolNameSearchPattern: (.+)
+
+  # 
+  # Type: string
+  CinderNetappSaPassword: ''
+
+  # 
+  # Mandatory. This parameter must be set by the user.
+  # Type: string
+  CinderNetappServerHostname: <None>
+
+  # 
+  # Type: string
+  CinderNetappServerPort: 80
+
+  # 
+  # Type: string
+  CinderNetappSizeMultiplier: 1.2
+
+  # 
+  # Type: string
+  CinderNetappStorageFamily: ontap_cluster
+
+  # 
+  # Type: string
+  CinderNetappStoragePools: ''
+
+  # 
+  # Type: string
+  CinderNetappStorageProtocol: nfs
+
+  # 
+  # Type: string
+  CinderNetappTransportType: http
+
+  # 
+  # Type: string
+  CinderNetappVfiler: ''
+
+  # 
+  # Type: string
+  CinderNetappVolumeList: ''
+
+  # 
+  # Type: string
+  CinderNetappVserver: ''
+
+  # 
+  # Type: string
+  CinderNetappWebservicePath: /devmgr/v2
+
+  # ******************************************************
+  # Static parameters - these are values that must be
+  # included in the environment but should not be changed.
+  # ******************************************************
+  # 
+  # Type: boolean
+  CinderEnableNetappBackend: True
+
+  # *********************
+  # End static parameters
+  # *********************
+resource_registry:
+  OS::TripleO::Services::CinderBackendNetApp: ../../deployment/cinder/cinder-backend-netapp-puppet.yaml

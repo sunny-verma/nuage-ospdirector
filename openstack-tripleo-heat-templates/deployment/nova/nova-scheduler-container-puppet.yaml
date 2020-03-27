@@ -1,0 +1,252 @@
+heat_template_version: rocky
+
+description: >
+  OpenStack containerized Nova Scheduler service
+
+parameters:
+  ContainerNovaSchedulerImage:
+    description: image
+    type: string
+  ContainerNovaConfigImage:
+    description: The container image to use for the nova config_volume
+    type: string
+  NovaSchedulerLoggingSource:
+    type: json
+    default:
+      tag: openstack.nova.scheduler
+      file: /var/log/containers/nova/nova-scheduler.log
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  NovaSchedulerAvailableFilters:
+    default: []
+    description: List of scheduler available filters
+    type: comma_delimited_list
+  NovaSchedulerDefaultFilters:
+    type: comma_delimited_list
+    default: []
+    description: >
+      An array of filters used by Nova to filter a node.These filters will be
+      applied in the order they are listed, so place your most restrictive
+      filters first to make the filtering process more efficient.
+  NovaSchedulerMaxAttempts:
+    type: number
+    default: 3
+    description: >
+     Maximum number of attempts the scheduler will make when deploying the
+     instance. You should keep it greater or equal to the number of bare
+     metal nodes you expect to deploy at once to work around potential race
+     conditions when scheduling.
+  MonitoringSubscriptionNovaScheduler:
+    default: 'overcloud-nova-scheduler'
+    type: string
+  NovaSchedulerDiscoverHostsInCellsInterval:
+    type: number
+    default: -1
+    description: >
+      This value controls how often (in seconds) the scheduler should
+      attempt to discover new hosts that have been added to cells.
+      The default value of -1 disables the periodic task completely.
+      It is recommended to set this parameter for deployments using Ironic.
+  NovaSchedulerWorkers:
+    default: 0
+    description: Number of workers for Nova Scheduler services.
+    type: number
+  NovaSchedulerQueryImageType:
+    type: boolean
+    default: true
+    description: >
+      This setting causes the scheduler to ask placement only for compute
+      hosts that support the disk_format of the image used in the request.
+  NovaSchedulerLimitTenantsToPlacementAggregate:
+    default: false
+    description: >
+      This value allows to have tenant isolation with placement. It ensures
+      hosts in tenant-isolated host aggregate and availability zones will
+      only be available to specific set of tenants.
+    type: boolean
+
+conditions:
+  nova_scheduler_workers_zero: {equals : [{get_param: NovaSchedulerWorkers}, 0]}
+
+resources:
+
+  ContainersCommon:
+    type: ../containers-common.yaml
+
+  MySQLClient:
+    type: ../../deployment/database/mysql-client.yaml
+
+  NovaLogging:
+    type: OS::TripleO::Services::Logging::NovaCommon
+    properties:
+      ContainerNovaImage: {get_param: ContainerNovaSchedulerImage}
+      NovaServiceName: 'scheduler'
+
+  NovaBase:
+    type: ./nova-base-puppet.yaml
+    properties:
+      ServiceData: {get_param: ServiceData}
+      ServiceNetMap: {get_param: ServiceNetMap}
+      DefaultPasswords: {get_param: DefaultPasswords}
+      EndpointMap: {get_param: EndpointMap}
+      RoleName: {get_param: RoleName}
+      RoleParameters: {get_param: RoleParameters}
+
+
+outputs:
+  role_data:
+    description: Role data for the Nova Scheduler service.
+    value:
+      service_name: nova_scheduler
+      monitoring_subscription: {get_param: MonitoringSubscriptionNovaScheduler}
+      config_settings:
+        map_merge:
+          - {get_attr: [NovaBase, role_data, config_settings]}
+          - {get_attr: [NovaLogging, config_settings]}
+          - nova::scheduler::filter::scheduler_available_filters: {get_param: NovaSchedulerAvailableFilters}
+            nova::scheduler::filter::scheduler_default_filters: {get_param: NovaSchedulerDefaultFilters}
+            nova::scheduler::filter::scheduler_max_attempts: {get_param: NovaSchedulerMaxAttempts}
+            nova::scheduler::discover_hosts_in_cells_interval: {get_param: NovaSchedulerDiscoverHostsInCellsInterval}
+            nova::scheduler::query_placement_for_image_type_support: {get_param: NovaSchedulerQueryImageType}
+            nova::scheduler::limit_tenants_to_placement_aggregate: {get_param: NovaSchedulerLimitTenantsToPlacementAggregate}
+          -
+            if:
+            - nova_scheduler_workers_zero
+            - {}
+            - nova::scheduler::workers: {get_param: NovaSchedulerWorkers}
+      service_config_settings:
+        rsyslog:
+          tripleo_logging_sources_nova_scheduler:
+            - {get_param: NovaSchedulerLoggingSource}
+      # BEGIN DOCKER SETTINGS
+      puppet_config:
+        config_volume: nova
+        puppet_tags: nova_config
+        step_config:
+          list_join:
+            - "\n"
+            - - include tripleo::profile::base::nova::scheduler
+              - {get_attr: [MySQLClient, role_data, step_config]}
+        config_image: {get_param: ContainerNovaConfigImage}
+      kolla_config:
+        /var/lib/kolla/config_files/nova_scheduler.json:
+          command:
+            list_join:
+            - ' '
+            - - /usr/bin/nova-scheduler
+              - get_attr: [NovaLogging, cmd_extra_args]
+          config_files:
+            - source: "/var/lib/kolla/config_files/src/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+          permissions:
+            - path: /var/log/nova
+              owner: nova:nova
+              recurse: true
+      docker_config:
+        step_4:
+          nova_scheduler:
+            image: {get_param: ContainerNovaSchedulerImage}
+            net: host
+            privileged: false
+            restart: always
+            healthcheck: {get_attr: [ContainersCommon, healthcheck_rpc_port]}
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                - {get_attr: [NovaLogging, volumes]}
+                -
+                  - /var/lib/kolla/config_files/nova_scheduler.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/nova/:/var/lib/kolla/config_files/src:ro
+                  - /run:/run
+            environment:
+              KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+      deploy_steps_tasks:
+        - name: validate nova scheduler container state
+          when:
+            - container_cli == 'podman'
+            - not container_healthcheck_disabled
+            - step|int == 5
+          tags:
+            - opendev-validation
+            - opendev-validation-nova
+          block:
+            - name: Get nova-scheduler healthcheck status
+              register: nova_scheduler_healthcheck_state
+              systemd:
+                name: tripleo_nova_scheduler_healthcheck
+              retries: 10
+              delay: 30
+              until: nova_scheduler_healthcheck_state.status.ExecMainPID != '0' and
+                nova_scheduler_healthcheck_state.status.ActiveState in ['inactive', 'failed']
+              ignore_errors: yes
+            - name: Fail if nova-scheduler healthcheck report failed status
+              fail:
+                msg: nova-scheduler isn't working (healthcheck failed)
+              when: nova_scheduler_healthcheck_state.status.ExecMainStatus != '0'
+      host_prep_tasks:
+        list_concat:
+          - {get_attr: [NovaLogging, host_prep_tasks]}
+          - - name: enable virt_sandbox_use_netlink for healthcheck
+              seboolean:
+                name: virt_sandbox_use_netlink
+                persistent: yes
+                state: yes
+      fast_forward_upgrade_tasks:
+        - when:
+            - step|int == 0
+            - release == 'rocky'
+          block:
+            - name: Check if nova_scheduler is deployed
+              command: systemctl is-enabled --quiet openstack-nova-scheduler
+              ignore_errors: True
+              register: nova_scheduler_enabled_result
+            - name: Set fact nova_scheduler_enabled
+              set_fact:
+                nova_scheduler_enabled: "{{ nova_scheduler_enabled_result.rc == 0 }}"
+        - name: Stop and disable nova-scheduler service
+          service: name=openstack-nova-scheduler state=stopped
+          when:
+            - step|int == 1
+            - release == 'rocky'
+            - nova_scheduler_enabled|bool
+      external_upgrade_tasks:
+        - when:
+            - step|int == 1
+          tags:
+            - never
+            - system_upgrade_transfer_data
+            - system_upgrade_stop_services
+          block:
+            - name: Stop nova scheduler container
+              import_role:
+                name: tripleo-container-stop
+              vars:
+                tripleo_containers_to_stop:
+                  - nova_scheduler
+                tripleo_delegate_to: "{{ groups['nova_scheduler'] | default([]) }}"

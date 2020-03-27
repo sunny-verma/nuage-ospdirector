@@ -1,0 +1,10 @@
+ImageName: "overcloud-full.qcow2"
+RhelUserName: 'sai_ram.peesapati@nokia.com'
+RhelPassword: 'P3es@pati'
+RhelPool: '8a85f999707800180170829d5f47065a'
+RpmPublicKey: ['RPM-GPG-KEY-Nuage']
+RepoFile: 'nuage.repo'
+logFileName: "nuage_image_patching.log"
+ProxyHostname: 'proxy.lbs.alcatel-lucent.com'
+ProxyPort: '8000'
+

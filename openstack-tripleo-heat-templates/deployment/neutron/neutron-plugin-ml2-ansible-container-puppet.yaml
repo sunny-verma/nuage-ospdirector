@@ -1,0 +1,77 @@
+heat_template_version: rocky
+
+description: >
+  Neutron ML2 networking-ansible Plugin (Docker)
+
+parameters:
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  ContainerNeutronConfigImage:
+    description: The container image to use for the neutron config_volume
+    type: string
+  DefaultPasswords:
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  ML2HostConfigs:
+    description: ML2 config for switches
+    default: {}
+    type: json
+  RedisPassword:
+    description: The password for the redis service account.
+    type: string
+    hidden: true
+
+resources:
+
+  NeutronMl2Base:
+    type: ./neutron-plugin-ml2.yaml
+    properties:
+      EndpointMap: {get_param: EndpointMap}
+      ServiceData: {get_param: ServiceData}
+      ServiceNetMap: {get_param: ServiceNetMap}
+      DefaultPasswords: {get_param: DefaultPasswords}
+      RoleName: {get_param: RoleName}
+      RoleParameters: {get_param: RoleParameters}
+
+outputs:
+  role_data:
+    description: Role data for the Neutron ML2 ansible Plugin role.
+    value:
+      service_name: neutron_plugin_ml2_ansible
+      config_settings:
+        map_merge:
+          - get_attr: [NeutronMl2Base, role_data, config_settings]
+          - neutron::plugins::ml2::networking_ansible::host_configs: {get_param: ML2HostConfigs}
+          - neutron_redis_password: {get_param: RedisPassword}
+      service_config_settings: {}
+      metadata_settings:
+        get_attr: [NeutronMl2Base, role_data, metadata_settings]
+      # BEGIN DOCKER SETTINGS
+      puppet_config:
+        config_volume: 'neutron'
+        puppet_tags: neutron_plugin_ml2
+        step_config: |
+          include ::tripleo::profile::base::neutron::plugins::ml2
+        config_image: {get_param: ContainerNeutronConfigImage}
+      kolla_config: {}
+      docker_config: {}

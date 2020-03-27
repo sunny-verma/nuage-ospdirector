@@ -1,0 +1,695 @@
+{#- ## Some variables are set to enable rendering backwards compatible templates #}
+{#- ## where a few parameter/resource names don't match the expected pattern #}
+{#- ## FIXME: we need some way to deprecate the old inconsistent parameters #}
+{%- set server_resource_name = role.deprecated_server_resource_name|default(role.name) -%}
+heat_template_version: rocky
+description: 'OpenStack {{role.name}} node configured by Puppet'
+parameters:
+{%- set default_flavor_name = role.FlavorDefault|default('baremetal') %}
+{%- if role.deprecated_param_flavor is defined %}
+  {{role.deprecated_param_flavor}}:
+    description: DEPRECATED Use Overcloud{{role.name}}Flavor instead.
+    default: {{default_flavor_name}}
+    type: string
+{%- endif %}
+  Overcloud{{role.name}}Flavor:
+    description: Flavor for the {{role.name}} node.
+    default: {{default_flavor_name}}
+    type: string
+{%- set default_image_name = role.ImageDefault|default('overcloud-full') %}
+{%- if role.deprecated_param_image is defined %}
+  {{role.deprecated_param_image}}:
+    type: string
+    default: {{default_image_name}}
+    description: DEPRECATED Use {{role.name}}Image instead
+{%- endif %}
+  {{role.name}}Image:
+    type: string
+    default: {{default_image_name}}
+    description: The disk image file to use for the role.
+  ImageUpdatePolicy:
+    default: 'REBUILD_PRESERVE_EPHEMERAL'
+    description: What policy to use when reconstructing instances. REBUILD for rebuilds, REBUILD_PRESERVE_EPHEMERAL to preserve /mnt.
+    type: string
+  KeyName:
+    description: Name of an existing Nova key pair to enable SSH access to the instances
+    type: string
+    default: default
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  UpdateIdentifier:
+    default: ''
+    type: string
+    description: >
+      Setting to a previously unused value during stack-update will trigger
+      package update on all nodes
+  Hostname:
+    type: string
+    default: '' # Defaults to Heat created hostname
+  HostnameMap:
+    type: json
+    default: {}
+    description: Optional mapping to override hostnames
+  {{role.name}}IPs:
+    default: {}
+    type: json
+{%- if role.deprecated_param_ips is defined %}
+  {{role.deprecated_param_ips}}:
+    default: {}
+    description: DEPRECATED - use {{role.name}}IPs instead
+    type: json
+{%- endif %}
+  SoftwareConfigTransport:
+    default: POLL_SERVER_CFN
+    description: |
+      How the server should receive the metadata required for software configuration.
+    type: string
+    constraints:
+    - allowed_values: [POLL_SERVER_CFN, POLL_SERVER_HEAT, POLL_TEMP_URL, ZAQAR_MESSAGE]
+  CloudDomain:
+    default: 'localdomain'
+    type: string
+    description: >
+      The DNS domain used for the hosts. This must match the
+      overcloud_domain_name configured on the undercloud.
+  {{role.name}}ServerMetadata:
+    default: {}
+    description: >
+      Extra properties or metadata passed to Nova for the created nodes in
+      the overcloud. It's accessible via the Nova metadata API. This option is
+      role-specific and is merged with the values given to the ServerMetadata
+      parameter.
+    type: json
+{%- if role.deprecated_param_metadata is defined %}
+  {{role.deprecated_param_metadata}}:
+    default: {}
+    description: DEPRECATED - use {{role.name}}ServerMetadata instead
+    type: json
+{%- endif %}
+  ServerMetadata:
+    default: {}
+    description: >
+      Extra properties or metadata passed to Nova for the created nodes in
+      the overcloud. It's accessible via the Nova metadata API. This applies to
+      all roles and is merged with a role-specific metadata parameter.
+    type: json
+  {{role.name}}SchedulerHints:
+    type: json
+    description: Optional scheduler hints to pass to nova
+    default: {}
+  NodeIndex:
+    type: number
+    default: 0
+  ServiceNames:
+    type: comma_delimited_list
+    default: []
+  MonitoringSubscriptions:
+    type: comma_delimited_list
+    default: []
+  ServiceMetadataSettings:
+    type: json
+    default: {}
+  ConfigCommand:
+    type: string
+    description: Command which will be run whenever configuration data changes
+    default: os-refresh-config --timeout 14400
+  ConfigCollectSplay:
+    type: number
+    default: 30
+    description: |
+      Maximum amount of time to possibly to delay configuration collection
+      polling. Defaults to 30 seconds. Set to 0 to disable it which will cause
+      the configuration collection to occur as soon as the collection process
+      starts.  This setting is used to prevent the configuration collection
+      processes from polling all at the exact same time.
+  UpgradeInitCommand:
+    type: string
+    description: |
+      Command or script snippet to run on all overcloud nodes to
+      initialize the upgrade process. E.g. a repository switch.
+    default: ''
+  UpgradeInitCommonCommand:
+    type: string
+    description: |
+      Common commands required by the upgrades process. This should not
+      normally be modified by the operator and is set and unset in the
+      major-upgrade-composable-steps.yaml and major-upgrade-converge.yaml
+      environment files.
+    default: ''
+  DeploymentServerBlacklistDict:
+    default: {}
+    type: json
+    description: >
+      Map of server hostnames to blacklist from any triggered
+      deployments. If the value is 1, the server will be blacklisted. This
+      parameter is generated from the parent template.
+  RoleParameters:
+    type: json
+    description: Parameters specific to the role
+    default: {}
+  {{role.name}}ControlPlaneSubnet:
+    default: ctlplane-subnet
+    description: |
+      Name of the subnet on ctlplane network for this role.
+    type: string
+  ControlPlaneSubnetCidr:
+    default: ''
+    description: >
+      The subnet CIDR of the control plane network. (The parameter is
+      automatically resolved from the ctlplane subnet's cidr attribute.)
+    type: string
+  ControlPlaneDefaultRoute:
+    default: ''
+    description: The default route of the control plane network. (The parameter
+      is automatically resolved from the ctlplane subnet's gateway_ip attribute.)
+    type: string
+  ControlPlaneStaticRoutes:
+    default: []
+    description: >
+      Routes for the ctlplane network traffic.
+      JSON route e.g. [{'destination':'10.0.0.0/16', 'nexthop':'10.0.0.1'}]
+      Unless the default is changed, the parameter is automatically resolved
+      from the subnet host_routes attribute.
+    type: json
+  DnsServers: # Override this via parameter_defaults
+    default: []
+    description: >
+      DNS servers to use for the Overcloud (2 max for some implementations).
+      If not set the nameservers configured in the ctlplane subnet's
+      dns_nameservers attribute will be used.
+    type: comma_delimited_list
+{%- for network in networks if network.enabled|default(true) and network.name in role.networks|default([]) %}
+  {{network.name}}InterfaceRoutes:
+    default: []
+    description: >
+      Routes for the {{network.name_lower}} network traffic.
+      JSON route e.g. [{'destination':'10.0.0.0/16', 'nexthop':'10.0.0.1'}]
+      Unless the default is changed, the parameter is automatically resolved
+      from the subnet host_routes attribute.
+    type: json
+  {%- if role.networks is mapping %}
+  {%-   set _subnets = network.get('subnets') %}
+  {%-   set _role_net_subnet = role.networks[network.name].get('subnet') %}
+  {%-   if _subnets and _role_net_subnet and _role_net_subnet in _subnets %}
+  {{network.name}}NetworkVlanID_{{_role_net_subnet}}:
+    default: {{network.subnets[_role_net_subnet].vlan|default(1)}}
+    description: >
+      Vlan ID for the {{network.name_lower}} network traffic for subnet
+      {{_role_net_subnet}}.
+    type: number
+  {%-   elif network.vlan|default(false) %}
+  {{network.name}}NetworkVlanID:
+    default: {{network.vlan|default(1)}}
+    description: Vlan ID for the {{network.name_lower}} network traffic.
+    type: number
+  {%-   endif %}
+  {%- elif network.vlan|default(false) %}
+  {{network.name}}NetworkVlanID:
+    default: {{network.vlan|default(1)}}
+    description: Vlan ID for the {{network.name_lower}} network traffic.
+    type: number
+  {%- endif %}
+{%- endfor %}
+
+  ServerDeletionPolicy:
+    description: Whether to retain or delete servers on deletion of the stack
+    type: string
+    default: delete
+    constraints:
+      - allowed_values: [delete, retain]
+
+  UserData:
+    type: string
+
+{% if role.uses_deprecated_params|default(false) %}
+parameter_groups:
+- label: deprecated
+  description: Do not use deprecated params, they will be removed.
+  parameters:
+{%- for property in role %}
+{%- if property.startswith('deprecated_param_') and not role[property].endswith(('SchedulerHints', 'ExtraConfig')) %}
+  - {{role[property]}}
+{%- endif %}
+{%- endfor %}
+{%- endif %}
+
+conditions:
+  server_blacklisted:
+    equals:
+      - {get_param: [DeploymentServerBlacklistDict, {get_param: Hostname}]}
+      - 1
+  server_not_blacklisted:
+    not:
+      equals:
+        - {get_param: [DeploymentServerBlacklistDict, {get_param: Hostname}]}
+        - 1
+{%- if role.deprecated_param_image is defined %}
+  deprecated_param_image_set:
+    not:
+      equals:
+        - {get_param: {{role.deprecated_param_image}}}
+        - {{default_image_name}}
+{%- endif %}
+{%- if role.deprecated_param_flavor is defined %}
+  deprecated_param_flavor_set:
+    not:
+      equals:
+        - {get_param: {{role.deprecated_param_flavor}}}
+        - {{default_flavor_name}}
+{%- endif %}
+  ctlplane_fixed_ip_set:
+    or:
+      - not:
+          equals:
+            - {get_param: [{{role.name}}IPs, 'ctlplane', {get_param: NodeIndex}]}
+            - ""
+{%- if role.deprecated_param_ips %}
+      - not:
+          equals:
+            - {get_param: [{{role.deprecated_param_ips}}, 'ctlplane', {get_param: NodeIndex}]}
+            - ""
+{%- endif %}
+      - false  # NOTE(hjensas): Make sure 'or' get's 2 conditions or more
+{%- for network in networks %}
+{%- if network.enabled|default(true) and network.name in role.networks|default([]) %}
+  {{role.name}}_{{network.name}}_fixed_ip_set:
+    not:
+      equals:
+        - {get_param: [{{role.name}}IPs, '{{network.name_lower}}', {get_param: NodeIndex}]}
+        - ''
+  {{network.name_lower}}_interface_routes_set:
+    not:
+      equals:
+        - {get_param: {{network.name}}InterfaceRoutes}
+        - []
+{%- endif %}
+{%- endfor %}
+  ctlplane_subnet_cidr_set:
+    not:
+      equals: [{get_param: ControlPlaneSubnetCidr}, '']
+  ctlplane_default_route_set:
+    not:
+      equals: [{get_param: ControlPlaneDefaultRoute}, '']
+  ctlplane_static_routes_set:
+    not:
+        equals: [{get_param: ControlPlaneStaticRoutes}, []]
+  dnsservers_set:
+    not:
+      equals: [{get_param: DnsServers}, []]
+
+resources:
+  {{server_resource_name}}:
+    type: OS::TripleO::{{role.name}}Server
+    deletion_policy: {get_param: ServerDeletionPolicy}
+    properties:
+      image:
+{%- if role.deprecated_param_image is defined %}
+        if:
+          - deprecated_param_image_set
+          - {get_param: {{role.deprecated_param_image}}}
+          - {get_param: {{role.name}}Image}
+{%- else %}
+        get_param: {{role.name}}Image
+{%- endif %}
+      image_update_policy: {get_param: ImageUpdatePolicy}
+      flavor:
+{%- if role.deprecated_param_flavor is defined %}
+        if:
+          - deprecated_param_flavor_set
+          - {get_param: {{role.deprecated_param_flavor}}}
+          - {get_param: Overcloud{{role.name}}Flavor}
+{%- else %}
+        get_param: Overcloud{{role.name}}Flavor
+{%- endif %}
+      key_name: {get_param: KeyName}
+      networks:
+        - if:
+          - ctlplane_fixed_ip_set
+          - network: ctlplane
+            subnet: {get_param: {{role.name}}ControlPlaneSubnet}
+            fixed_ip:
+              yaql:
+                expression: $.data.where(not isEmpty($)).first()
+                data:
+                  - get_param: [{{role.name}}IPs, 'ctlplane', {get_param: NodeIndex}]
+{%- if role.deprecated_param_ips %}
+                  - get_param: [{{role.deprecated_param_ips}}, 'ctlplane', {get_param: NodeIndex}]
+{%- endif %}
+          - network: ctlplane
+            subnet: {get_param: {{role.name}}ControlPlaneSubnet}
+      user_data_format: SOFTWARE_CONFIG
+      user_data: {get_param: UserData}
+      name:
+        yaql:
+          expression: $.data.hostname_map.get($.data.hostname, $.data.hostname).toLower()
+          data:
+            hostname: {get_param: Hostname}
+            hostname_map: {get_param: HostnameMap}
+      software_config_transport: {get_param: SoftwareConfigTransport}
+      metadata:
+        map_merge:
+          - {get_param: ServerMetadata}
+{%- if role.deprecated_param_metadata is defined %}
+          - {get_param: {{role.deprecated_param_metadata}}}
+{%- endif %}
+          - {get_param: {{role.name}}ServerMetadata}
+          - {get_param: ServiceMetadataSettings}
+      scheduler_hints: {get_param: {{role.name}}SchedulerHints}
+
+  {%- for network in networks %}
+  {%- if network.enabled|default(true) and network.name in role.networks|default([]) %}
+  {{network.name}}Port:
+    type: OS::TripleO::{{role.name}}::Ports::{{network.name}}Port
+    properties:
+      PortName:
+        list_join:
+          - '_'
+          - - {get_attr: [{{server_resource_name}}, name]}
+            - {{network.name}}
+      ControlPlaneIP: {get_attr: [{{server_resource_name}}, networks, ctlplane, 0]}
+      FixedIPs:
+        if:
+          - {{role.name}}_{{network.name}}_fixed_ip_set
+          - [{ip_address: {get_param: [{{role.name}}IPs, '{{network.name_lower}}', {get_param: NodeIndex}]}}]
+{%-     if role.networks is mapping and role.networks.get(network.name) %}
+{%-       if network.get('service_net_map_replace') == role.networks[network.name].get('subnet').split('_subnet', -1)[0]
+            and role.networks[network.name].get('subnet').split('_subnet', -1)[0] not in network.get('subnets', {}).keys() %}
+          - [{subnet: {{network.name_lower + '_subnet'}}}]
+{%-       else %}
+          - [{subnet: {{role.networks[network.name].get('subnet', network.name_lower + '_subnet')}}}]
+{%-       endif %}
+{%-     else %}
+          - [{subnet: {{network.name_lower}}_subnet}]
+{%-     endif %}
+      ControlPlaneSubnetCidr:
+        if:
+          - ctlplane_subnet_cidr_set
+          - {get_param: ControlPlaneSubnetCidr}
+          # DeployedServer docs specify 'cidr: 24' in DeployedServerPortMap.
+          # Support both that, and 'cidr: 192.168.24.0/24'.
+          - yaql:
+              expression: str("{0}".format($.data).split("/")[-1])
+              data: {get_attr: [{{server_resource_name}}, addresses, ctlplane, 0, subnets, 0, cidr]}
+      IPPool:
+        map_merge:
+{%- if role.deprecated_param_ips is defined %}
+          - {get_param: {{role.deprecated_param_ips}}}
+{%- endif %}
+          - {get_param: {{role.name}}IPs}
+      NodeIndex: {get_param: NodeIndex}
+  {%- endif %}
+  {%- endfor %}
+
+  NetworkConfig:
+    type: OS::TripleO::{{role.name}}::Net::SoftwareConfig
+    properties:
+      ControlPlaneIp: "{{ '{{' }} ctlplane_ip {{ '}}' }}"
+      ControlPlaneSubnetCidr:
+        if:
+          - ctlplane_subnet_cidr_set
+          - {get_param: ControlPlaneSubnetCidr}
+          - yaql:
+              expression: str("{0}".format($.data).split("/")[-1])
+              data: {get_attr: [{{server_resource_name}}, addresses, ctlplane, 0, subnets, 0, cidr]}
+
+      ControlPlaneDefaultRoute:
+        if:
+          - ctlplane_default_route_set
+          - {get_param: ControlPlaneDefaultRoute}
+          - {get_attr: [{{server_resource_name}}, addresses, ctlplane, 0, subnets, 0, gateway_ip]}
+      ControlPlaneStaticRoutes:
+        if:
+          - ctlplane_static_routes_set
+          - {get_param: ControlPlaneStaticRoutes}
+          - yaql:
+              expression: switch(isList($.data) => $.data, true => [])
+              data: {get_attr: [{{server_resource_name}}, addresses, ctlplane, 0, subnets, 0, host_routes]}
+      ControlPlaneMtu:
+        yaql:
+          expression: switch(isInteger($.data) => $.data, true => 1500)
+          data: {get_attr: [{{server_resource_name}}, addresses, ctlplane, 0, network, mtu]}
+      DnsServers:
+        if:
+          - dnsservers_set
+          - {get_param: DnsServers}
+          - {get_attr: [{{server_resource_name}}, addresses, ctlplane, 0, subnets, 0, dns_nameservers]}
+
+  {%- for network in networks %}
+  {%- if network.enabled|default(true) and network.name in role.networks|default([]) %}
+      {{network.name}}IpSubnet: "{{ '{{' }} {{network.name_lower}}_ip ~ '/' ~ {{network.name_lower}}_cidr {{ '}}' }}"
+      {{network.name}}InterfaceRoutes:
+        if:
+          - {{network.name_lower}}_interface_routes_set
+          - {get_param: {{network.name}}InterfaceRoutes}
+          - {get_attr: [{{network.name}}Port, host_routes]}
+      {{network.name}}Mtu: {get_attr: [{{network.name}}Port, mtu]}
+    {%- if network.name in role.default_route_networks %}
+      {{network.name}}InterfaceDefaultRoute: {get_attr: [{{network.name}}Port, gateway_ip]}
+    {%- endif %}
+    {%- if role.networks is mapping %}
+      {%- set _subnets = network.get('subnets') %}
+      {%- set _role_net_subnet = role.networks[network.name].get('subnet') %}
+      {%- if _subnets and _role_net_subnet and _role_net_subnet in _subnets %}
+      {{network.name}}NetworkVlanID: {get_param: {{network.name}}NetworkVlanID_{{_role_net_subnet}}}
+      {%- elif network.vlan|default(false) %}
+      {{network.name}}NetworkVlanID: {get_param: {{network.name}}NetworkVlanID}
+      {%- endif %}
+    {%- elif network.vlan|default(false) %}
+      {{network.name}}NetworkVlanID: {get_param: {{network.name}}NetworkVlanID}
+    {%- endif %}
+  {%- endif %}
+  {%- endfor %}
+
+  NetIpMap:
+    type: OS::TripleO::Network::Ports::NetIpMap
+    properties:
+      ControlPlaneIp: {get_attr: [{{server_resource_name}}, networks, ctlplane, 0]}
+      ControlPlaneSubnetCidr:
+        if:
+          - ctlplane_subnet_cidr_set
+          - {get_param: ControlPlaneSubnetCidr}
+          - yaql:
+              expression: str("{0}".format($.data).split("/")[-1])
+              data: {get_attr: [{{server_resource_name}}, addresses, ctlplane, 0, subnets, 0, cidr]}
+
+
+  {%- for network in networks %}
+  {%- if network.enabled|default(true) and network.name in role.networks|default([]) %}
+      {{network.name}}Ip: {get_attr: [{{network.name}}Port, ip_address]}
+      {{network.name}}IpSubnet: {get_attr: [{{network.name}}Port, ip_subnet]}
+      {{network.name}}IpUri: {get_attr: [{{network.name}}Port, ip_address_uri]}
+  {%- endif %}
+  {%- endfor %}
+
+  NetHostMap:
+    type: OS::Heat::Value
+    properties:
+      type: json
+      value:
+  {%- for network in networks %}
+  {%- if network.enabled|default(true) and network.name in role.networks|default([]) %}
+        {{network.name_lower}}:
+          fqdn:
+            list_join:
+            - '.'
+            - - {get_attr: [{{server_resource_name}}, name]}
+              - {{network.name.lower()}}
+              - {get_param: CloudDomain}
+          short:
+            list_join:
+            - '.'
+            - - {get_attr: [{{server_resource_name}}, name]}
+              - {{network.name.lower()}}
+  {%- endif %}
+  {%- endfor %}
+        ctlplane:
+          fqdn:
+            list_join:
+            - '.'
+            - - {get_attr: [{{server_resource_name}}, name]}
+              - ctlplane
+              - {get_param: CloudDomain}
+          short:
+            list_join:
+            - '.'
+            - - {get_attr: [{{server_resource_name}}, name]}
+              - ctlplane
+        canonical:
+          fqdn:
+            list_join:
+            - '.'
+            - - {get_attr: [{{server_resource_name}}, name]}
+              - {get_param: CloudDomain}
+          short:
+            - {get_attr: [{{server_resource_name}}, name]}
+
+  PreNetworkConfig:
+    type: OS::TripleO::{{role.name}}::PreNetworkConfig
+    properties:
+      server: {get_resource: {{server_resource_name}}}
+      RoleParameters: {get_param: RoleParameters}
+      ServiceNames: {get_param: ServiceNames}
+      deployment_actions: {get_attr: [DeploymentActions, value]}
+
+  # Resource for site-specific injection of root certificate
+  NodeTLSCAData:
+    depends_on: PreNetworkConfig
+    type: OS::TripleO::NodeTLSCAData
+    properties:
+      server: {get_resource: {{server_resource_name}}}
+
+  # Hook for site-specific additional pre-deployment config, e.g extra hieradata
+  {{role.name}}ExtraConfigPre:
+    type: OS::TripleO::{{role.name}}ExtraConfigPre
+    # We have to use conditions here so that we don't break backwards
+    # compatibility with templates everywhere
+    condition: server_not_blacklisted
+    properties:
+        server: {get_resource: {{server_resource_name}}}
+
+  # Hook for site-specific additional pre-deployment config,
+  # applying to all nodes, e.g node registration/unregistration
+  NodeExtraConfig:
+    depends_on:
+      - {{role.name}}ExtraConfigPre
+      - NodeTLSCAData
+    type: OS::TripleO::NodeExtraConfig
+    # We have to use conditions here so that we don't break backwards
+    # compatibility with templates everywhere
+    condition: server_not_blacklisted
+    properties:
+        server: {get_resource: {{server_resource_name}}}
+
+  DeploymentActions:
+    type: OS::Heat::Value
+    properties:
+      value:
+        if:
+          - server_not_blacklisted
+          - ['CREATE', 'UPDATE']
+          - []
+
+  {{server_resource_name}}AnsibleHostVars:
+    type: OS::Heat::Value
+    properties:
+      type: json
+      value:
+  {%- for network in networks %}
+  {%- if network.enabled|default(true) and network.name in role.networks|default([]) %}
+        fqdn_{{network.name_lower}}: {get_attr: [NetHostMap, value, {{network.name_lower}}, fqdn]}
+  {%- endif %}
+  {%- endfor %}
+        fqdn_ctlplane: {get_attr: [NetHostMap, value, ctlplane, fqdn]}
+        fqdn_canonical: {get_attr: [NetHostMap, value, canonical, fqdn]}
+        hostname_resolve_network: {get_param: [ServiceNetMap, {{role.name}}HostnameResolveNetwork]}
+
+outputs:
+  ansible_host_vars_map:
+    description: |
+      Map of Ansible variables specific per host.
+      This map is used to construct the AnsibleHostVarsMap output for the
+      ansible vars per host in config-download.
+    value:
+      map_replace:
+        - host: {get_attr: [{{server_resource_name}}AnsibleHostVars, value]}
+        - keys:
+            host: {get_attr: [{{server_resource_name}}, name]}
+  ip_address:
+    description: IP address of the server in the ctlplane network
+    value: {get_attr: [{{server_resource_name}}, networks, ctlplane, 0]}
+  blacklist_ip_address:
+    description: IP address of the server if the server is blacklisted, otherwise this output will be an empty string
+    value:
+      if:
+        - server_blacklisted
+        - {get_attr: [{{server_resource_name}}, networks, ctlplane, 0]}
+        - ""
+  blacklist_hostname:
+    description: Hostname of the server if the server is blacklisted, otherwise this output will be an empty string
+    value:
+      if:
+        - server_blacklisted
+        - {get_attr: [{{server_resource_name}}, name]}
+        - ""
+  hostname:
+    description: Hostname of the server
+    value: {get_attr: [{{server_resource_name}}, name]}
+  hostname_map:
+    description: Mapping of network names to hostnames
+    value:
+  {%- for network in networks %}
+  {%- if network.enabled|default(true) and network.name in role.networks|default([]) %}
+      {{network.name_lower|default(network.name.lower())}}: {get_attr: [NetHostMap, value, {{network.name_lower|default(network.name.lower()) }}, fqdn]}
+  {%- endif %}
+  {%- endfor %}
+      ctlplane: {get_attr: [NetHostMap, value, ctlplane, fqdn]}
+      canonical: {get_attr: [NetHostMap, value, canonical, fqdn]}
+  hostname_network_config_map:
+    description: Mapping of hostname to NetworkConfig resource
+    value:
+      map_replace:
+        - HOSTNAME: {get_resource: NetworkConfig}
+        - keys:
+            HOSTNAME: {get_attr:[{{server_resource_name}}, name]}
+  hosts_entry:
+    value:
+      str_replace:
+        template: |
+          PRIMARYIP PRIMARYHOST.DOMAIN PRIMARYHOST
+  {%- for network in networks %}
+  {%- if network.enabled|default(true) and network.name in role.networks|default([]) %}
+          {{network.name}}IP {{network.name}}HOST.DOMAIN {{network.name}}HOST
+  {%- endif %}
+  {%- endfor %}
+          CTLPLANEIP CTLPLANEHOST.DOMAIN CTLPLANEHOST
+        params:
+          PRIMARYIP: {get_attr: [NetIpMap, net_ip_map, {get_param: [ServiceNetMap, {{role.name}}HostnameResolveNetwork]}]}
+          DOMAIN: {get_param: CloudDomain}
+          PRIMARYHOST: {get_attr: [{{server_resource_name}}, name]}
+  {%- for network in networks %}
+  {%- if network.enabled|default(true) and network.name in role.networks|default([]) %}
+          {{network.name}}IP: {get_attr: [{{network.name}}Port, ip_address]}
+          {{network.name}}HOST: {get_attr: [NetHostMap, value, {{network.name_lower|default(network.name.lower())}}, short]}
+  {%- endif %}
+  {%- endfor %}
+          CTLPLANEIP: {get_attr: [{{server_resource_name}}, networks, ctlplane, 0]}
+          CTLPLANEHOST: {get_attr: [NetHostMap, value, ctlplane, short]}
+  nova_server_resource:
+    description: Heat resource handle for {{role.name}} server
+    value:
+      {get_resource: {{server_resource_name}}}
+    condition: server_not_blacklisted
+  deployed_server_port_map:
+    description: |
+      Map of Heat created hostname of the server to ip address. This is the
+      hostname before it has been mapped with the HostnameMap parameter, and
+      the IP address from the ctlplane network. This map can be used to construct
+      the DeployedServerPortMap parameter when using split-stack.
+    value:
+      map_replace:
+        - hostname:
+            fixed_ips:
+              - ip_address: {get_attr: [{{server_resource_name}}, networks, ctlplane, 0]}
+            subnets:
+              - cidr: {get_attr: [{{server_resource_name}}, addresses, ctlplane, 0, subnets, 0, cidr]}
+        - keys:
+            hostname:
+              list_join:
+                - '-'
+                - - {get_param: Hostname}
+                  - ctlplane
+  {%- for network in networks %}
+  {%- if network.enabled|default(true) and network.name in role.networks|default([]) %}
+  {{network.name_lower|default(network.name.lower())}}_ip_address:
+    description: IP address of the server in the {{network.name}} network
+    value: {get_attr: [{{network.name}}Port, ip_address]}
+  {%- endif %}
+  {%- endfor %}

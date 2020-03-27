@@ -1,0 +1,263 @@
+heat_template_version: rocky
+
+description: >
+  OpenStack containerized Nova Ironic Compute service
+
+parameters:
+  ContainerNovaComputeIronicImage:
+    description: image
+    type: string
+  ContainerNovaConfigImage:
+    description: The container image to use for the nova config_volume
+    type: string
+  ServiceData:
+    default: {}
+    description: Dictionary packing service data
+    type: json
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  IronicPassword:
+    description: The password for the Ironic service and db account, used by the Ironic services
+    type: string
+    hidden: true
+  MultipathdEnable:
+    default: false
+    description: Whether to enable the multipath daemon
+    type: boolean
+  NovaNfsEnabled:
+    default: false
+    description: Whether to enable or not the NFS backend for Nova
+    type: boolean
+    tags:
+      - role_specific
+  IronicApiMaxRetries:
+    description: The number of times to retry when a request conflicts. If set to 0, only try once, no retries.
+    type: number
+    default: -1
+
+conditions:
+
+  nova_nfs_enabled:
+    or:
+      - and:
+        - equals: [{get_param: NovaNfsEnabled}, true]
+        - equals: [{get_param: [RoleParameters, NovaNfsEnabled]}, '']
+      - equals: [{get_param: [RoleParameters, NovaNfsEnabled]}, true]
+  ironic_api_max_retry_cond:
+    equals: [{get_param: IronicApiMaxRetries}, -1]
+
+resources:
+
+  ContainersCommon:
+    type: ../containers-common.yaml
+
+  MySQLClient:
+    type: ../../deployment/database/mysql-client.yaml
+
+  NovaComputeCommon:
+    type: ./nova-compute-common-container-puppet.yaml
+    properties:
+      EndpointMap: {get_param: EndpointMap}
+      ServiceData: {get_param: ServiceData}
+      ServiceNetMap: {get_param: ServiceNetMap}
+      DefaultPasswords: {get_param: DefaultPasswords}
+      RoleName: {get_param: RoleName}
+      RoleParameters: {get_param: RoleParameters}
+
+  NovaBase:
+    type: ./nova-base-puppet.yaml
+    properties:
+      ServiceData: {get_param: ServiceData}
+      ServiceNetMap: {get_param: ServiceNetMap}
+      DefaultPasswords: {get_param: DefaultPasswords}
+      EndpointMap: {get_param: EndpointMap}
+      RoleName: {get_param: RoleName}
+      RoleParameters: {get_param: RoleParameters}
+
+outputs:
+  role_data:
+    description: Role data for the Nova Compute service.
+    value:
+      service_name: nova_ironic
+      config_settings:
+        map_merge:
+          - get_attr: [NovaBase, role_data, config_settings]
+          - nova::compute::force_config_drive: true
+            nova::compute::reserved_host_memory: '0'
+            nova::compute::vnc_enabled: false
+            nova::ironic::common::password: {get_param: IronicPassword}
+            nova::ironic::common::project_name: 'service'
+            nova::ironic::common::auth_url: {get_param: [EndpointMap, KeystoneInternal, uri_no_suffix]}
+            nova::ironic::common::username: 'ironic'
+            nova::ironic::common::api_endpoint: {get_param: [EndpointMap, IronicInternal, uri]}
+          - if:
+            - ironic_api_max_retry_cond
+            - {}
+            - nova::ironic::common::api_max_retries:
+                get_param: IronicApiMaxRetries
+      puppet_config:
+        config_volume: nova
+        puppet_tags: nova_config,nova_paste_api_ini
+        step_config:
+          list_join:
+              - "\n"
+              - - include tripleo::profile::base::nova::compute::ironic
+                - {get_attr: [MySQLClient, role_data, step_config]}
+        config_image: {get_param: ContainerNovaConfigImage}
+      kolla_config:
+        /var/lib/kolla/config_files/nova_ironic.json:
+          command: /usr/bin/nova-compute
+          config_files:
+            - source: "/var/lib/kolla/config_files/src/*"
+              dest: "/"
+              merge: true
+              preserve_properties: true
+            - source: "/var/lib/kolla/config_files/src-iscsid/*"
+              dest: "/etc/iscsi/"
+              merge: true
+              preserve_properties: true
+          permissions:
+            - path: /var/log/nova
+              owner: nova:nova
+              recurse: true
+      container_config_scripts:
+        map_merge:
+          - {get_attr: [ContainersCommon, container_config_scripts]}
+          - {get_attr: [NovaComputeCommon, container_config_scripts]}
+      docker_config:
+        step_3:
+          nova_statedir_owner:
+            image: &nova_ironic_image {get_param: ContainerNovaComputeIronicImage}
+            net: none
+            user: root
+            privileged: false
+            detach: false
+            volumes:
+              list_concat:
+                # podman fails to relable if nova_nfs_enabled where we have
+                # the nfs share mounted to /var/lib/nova/instances
+                -
+                  if:
+                  - nova_nfs_enabled
+                  - - /var/lib/nova:/var/lib/nova:shared
+                  - - /var/lib/nova:/var/lib/nova:shared,z
+                -
+                  - /var/lib/container-config-scripts/:/container-config-scripts/
+            command: "/container-config-scripts/pyshim.sh /container-config-scripts/nova_statedir_ownership.py"
+        step_5:
+          nova_compute:
+            start_order: 100 # After the ironic services
+            image: *nova_ironic_image
+            net: host
+            privileged: true
+            user: root
+            restart: always
+            healthcheck: {get_attr: [ContainersCommon, healthcheck_rpc_port]}
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/kolla/config_files/nova_ironic.json:/var/lib/kolla/config_files/config.json:ro
+                  - /var/lib/config-data/puppet-generated/nova/:/var/lib/kolla/config_files/src:ro
+                  - /etc/iscsi:/var/lib/kolla/config_files/src-iscsid:ro
+                  - /run:/run
+                  - /dev:/dev
+                  - /var/lib/iscsi:/var/lib/iscsi:z
+                  - /var/log/containers/nova:/var/log/nova:z
+                -
+                  # podman fails to relable if nova_nfs_enabled where we have
+                  # the nfs share mounted to /var/lib/nova/instances
+                  if:
+                  - nova_nfs_enabled
+                  - - /var/lib/nova:/var/lib/nova:shared
+                  - - /var/lib/nova:/var/lib/nova:shared,z
+                -
+                  if:
+                  - {equals: [{get_param: MultipathdEnable}, true]}
+                  - - /etc/multipath:/etc/multipath:z
+                    - /etc/multipath.conf:/etc/multipath.conf:ro
+                  - []
+            environment:
+             KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+          nova_wait_for_compute_service:
+            start_order: 101
+            image: *nova_ironic_image
+            net: host
+            detach: false
+            volumes:
+              list_concat:
+                - {get_attr: [ContainersCommon, volumes]}
+                -
+                  - /var/lib/config-data/nova/etc/my.cnf.d/:/etc/my.cnf.d/:ro
+                  - /var/lib/config-data/nova/etc/nova/:/etc/nova/:ro
+                  - /var/log/containers/nova:/var/log/nova
+                  - /var/lib/container-config-scripts/:/container-config-scripts/
+            user: root
+            command: "/container-config-scripts/pyshim.sh /container-config-scripts/nova_wait_for_compute_service.py"
+      host_prep_tasks:
+        - name: create persistent directories
+          file:
+            path: "{{ item.path }}"
+            state: directory
+            setype: "{{ item.setype }}"
+          with_items:
+            - { 'path': /var/log/containers/nova, 'setype': svirt_sandbox_file_t }
+            - { 'path': /var/lib/nova, 'setype': svirt_sandbox_file_t }
+            - { 'path': /var/log/nova, 'setype': svirt_sandbox_file_t }
+        - name: nova logs readme
+          copy:
+            dest: /var/log/nova/readme.txt
+            content: |
+              Log files from nova containers can be found under
+              /var/log/containers/nova and /var/log/containers/httpd/nova-*.
+          ignore_errors: true
+        - name: enable virt_sandbox_use_netlink for healthcheck
+          seboolean:
+            name: virt_sandbox_use_netlink
+            persistent: yes
+            state: yes
+      external_post_deploy_tasks: {get_attr: [NovaComputeCommon, nova_compute_common_deploy_steps_tasks]}
+      fast_forward_upgrade_tasks:
+        - when:
+            - step|int == 0
+            - release == 'rocky'
+          block:
+            - name: Check if nova ironic is deployed
+              command: systemctl is-enabled --quiet openstack-nova-compute
+              tags: common
+              register: nova_ironic_enabled_result
+            - name: Set fact nova_ironic_enabled
+              set_fact:
+                nova_ironic_enabled: "{{ nova_ironic_enabled_result.rc == 0 }}"
+        - name: Stop and disable nova-compute service
+          service: name=openstack-nova-compute state=stopped
+          when:
+            - step|int == 1
+            - release == 'rocky'
+            - nova_ironic_enabled|bool
+        - name: Set upgrade marker in nova statedir
+          when:
+            - step|int == 1
+            - release == 'rocky'
+            - nova_ironic_enabled|bool
+          file: path=/var/lib/nova/upgrade_marker state=touch owner=nova group=nova
